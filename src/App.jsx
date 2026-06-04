@@ -1,21 +1,21 @@
 import { useState } from "react";
 
 const theme = {
-  bg: "#0B0F1A",
-  card: "#131929",
-  cardBorder: "#1E2D45",
-  accent: "#00D97E",
-  accentSoft: "rgba(0,217,126,0.12)",
-  accentGlow: "rgba(0,217,126,0.25)",
-  warning: "#F5A623",
-  warnSoft: "rgba(245,166,35,0.12)",
-  danger: "#FF5C5C",
-  dangerSoft: "rgba(255,92,92,0.1)",
-  textPrimary: "#EDF2FF",
-  textSecondary: "#7B8FAD",
-  textMuted: "#4A5568",
-  blue: "#4A9EFF",
-  blueSoft: "rgba(74,158,255,0.12)",
+  bg: "#F8FAFC",
+  card: "#FFFFFF",
+  cardBorder: "#E2E8F0",
+  accent: "#16864C",
+  accentSoft: "rgba(22,134,76,0.12)",
+  accentGlow: "rgba(22,134,76,0.25)",
+  warning: "#C49A2C",
+  warnSoft: "rgba(196,154,44,0.12)",
+  danger: "#EF4444",
+  dangerSoft: "rgba(239,68,68,0.1)",
+  textPrimary: "#082554",
+  textSecondary: "#475569",
+  textMuted: "#64748B",
+  blue: "#082554",
+  blueSoft: "rgba(8,37,84,0.12)",
 };
 
 const styles = `
@@ -72,7 +72,7 @@ const styles = `
 
   .nav-bar {
     display: flex;
-    background: rgba(19,25,41,0.95);
+    background: rgba(248,250,252,0.95);
     backdrop-filter: blur(20px);
     border-top: 1px solid ${theme.cardBorder};
     padding: 10px 0 20px;
@@ -200,7 +200,7 @@ const styles = `
   .btn-primary {
     width: 100%;
     background: ${theme.accent};
-    color: #0B0F1A;
+    color: #FFFFFF;
     border: none;
     border-radius: 14px;
     padding: 16px;
@@ -244,7 +244,7 @@ const styles = `
 
   .input-field {
     width: 100%;
-    background: rgba(255,255,255,0.04);
+    background: #FFFFFF;
     border: 1px solid ${theme.cardBorder};
     border-radius: 12px;
     padding: 13px 14px;
@@ -560,9 +560,17 @@ function HomeScreen() {
           <div style={{ fontSize: 12, color: theme.textMuted, fontWeight: 600, letterSpacing: "0.06em", marginBottom: 2 }}>
             APRIL 2026
           </div>
-          <div className="screen-title" style={{ marginBottom: 0 }}>Dashboard</div>
+          <div className="screen-title" style={{ marginBottom: 0 }}>TaxMate UK</div>
+          <div style={{ fontSize: 13, color: theme.textSecondary, fontWeight: 500 }}>by Daramola Digital Labs</div>
         </div>
-        <div style={{ width: 40, height: 40, borderRadius: 14, background: `linear-gradient(135deg, ${theme.accent}, ${theme.blue})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>👤</div>
+        <div style={{ width: 40, height: 40, borderRadius: 14, background: `linear-gradient(135deg, ${theme.accent}, ${theme.blue})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, color: "#FFFFFF" }}>👤</div>
+      </div>
+
+      <div style={{ background: theme.blueSoft, borderRadius: 14, padding: 14, marginBottom: 14 }}>
+        <div style={{ fontSize: 13, color: theme.textPrimary, fontWeight: 700, marginBottom: 4 }}>A product of Daramola Digital Labs</div>
+        <div style={{ fontSize: 12, color: theme.textSecondary, lineHeight: 1.4 }}>
+          TaxMate UK helps individuals, sole traders, and small businesses organise tax information, track key records, and make clearer compliance decisions.
+        </div>
       </div>
 
       <div className="insight-card">
@@ -1036,14 +1044,16 @@ export default function TaxMateApp() {
   return (
     <>
       <style>{styles}</style>
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20, background: "#060A14", minHeight: "100vh", padding: "40px 20px" }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20, background: "#F0F4F8", minHeight: "100vh", padding: "40px 20px" }}>
         {/* App brand header outside phone */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-          <div style={{ width: 32, height: 32, borderRadius: 10, background: `linear-gradient(135deg, ${theme.accent}, ${theme.blue})`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>💷</div>
-          <div style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 22, color: theme.textPrimary }}>
-            TaxMate <span style={{ color: theme.accent }}>UK</span>
+        <div style={{ textAlign: "center", marginBottom: 4 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 8 }}>
+            <img src="/logo.svg" alt="DDL Logo" style={{ width: 32, height: 32 }} />
+            <div style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: 22, color: theme.textPrimary }}>
+              TaxMate <span style={{ color: theme.accent }}>UK</span>
+            </div>
+            <div style={{ background: theme.accentSoft, color: theme.accent, fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 99, border: `1px solid ${theme.accentSoft}` }}>PROTOTYPE</div>
           </div>
-          <div style={{ background: theme.accentSoft, color: theme.accent, fontSize: 11, fontWeight: 700, padding: "3px 8px", borderRadius: 99, border: `1px solid rgba(0,217,126,0.2)` }}>PROTOTYPE</div>
         </div>
 
         {/* Phone shell */}
@@ -1074,8 +1084,9 @@ export default function TaxMateApp() {
           </div>
         </div>
 
-        <div style={{ fontSize: 12, color: theme.textMuted, textAlign: "center" }}>
-          Tap the nav tabs to explore all screens
+        <div style={{ fontSize: 12, color: theme.textMuted, textAlign: "center", maxWidth: 400, marginTop: 10, lineHeight: 1.5 }}>
+          <div>© 2026 Daramola Digital Labs. All rights reserved.</div>
+          <div>TaxMate UK is a product of Daramola Digital Labs.</div>
         </div>
       </div>
     </>
