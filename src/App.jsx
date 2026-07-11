@@ -136,7 +136,8 @@ const Button = ({ variant = "primary", disabled = false, children, onClick }) =>
   );
 };
 
-// Input component
+// Input component (part of design system library)
+// eslint-disable-next-line no-unused-vars
 const Input = ({ error = false, success = false, ...props }) => {
   const borderColor = error ? TOKENS.colors.semantic.danger : success ? TOKENS.colors.green[500] : TOKENS.colors.neutral[200];
   return (
@@ -155,7 +156,8 @@ const Input = ({ error = false, success = false, ...props }) => {
   );
 };
 
-// Badge component
+// Badge component (part of design system library)
+// eslint-disable-next-line no-unused-vars
 const Badge = ({ variant = "default", children }) => {
   const colors = {
     default: { bg: TOKENS.colors.neutral[100], text: TOKENS.colors.neutral[700] },
@@ -215,7 +217,8 @@ const Alert = ({ variant = "warning", title, children }) => {
   );
 };
 
-// Empty state component
+// Empty state component (part of design system library)
+// eslint-disable-next-line no-unused-vars
 const EmptyState = ({ icon, title, description, action }) => (
   <div style={{ textAlign: "center", padding: "48px 16px" }}>
     <div style={{ fontSize: "56px", marginBottom: "16px" }}>{icon}</div>
@@ -225,7 +228,8 @@ const EmptyState = ({ icon, title, description, action }) => (
   </div>
 );
 
-// Table component
+// Table component (part of design system library)
+// eslint-disable-next-line no-unused-vars
 const Table = ({ columns, rows }) => (
   <div style={{ overflowX: "auto" }}>
     <table style={{ width: "100%", borderCollapse: "collapse" }}>
