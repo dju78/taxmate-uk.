@@ -369,6 +369,104 @@ function Dashboard() {
     { month: "Jul", income: 95, expense: 28 },
   ];
 
+  const renderContent = () => {
+    switch (activeNav) {
+      case "dashboard":
+        return (
+          <>
+            <div className="header-row">
+              <div>
+                <div>Tuesday, 11 July</div>
+                <div className="header-title">Morning, Priya 👋</div>
+              </div>
+              <div className="avatar"></div>
+            </div>
+
+            <div className="kpi-grid">
+              <div className="kpi-card hero">
+                <div className="kpi-label">Estimated tax owed</div>
+                <div className="kpi-value">£3,412.60</div>
+                <div className="kpi-sub">Due 31 Jan 2027</div>
+              </div>
+              <div className="kpi-card white">
+                <div className="kpi-label">Income YTD</div>
+                <div className="kpi-value">£38,960</div>
+                <div className="kpi-sub">↑ 12% vs last year</div>
+              </div>
+              <div className="kpi-card white">
+                <div className="kpi-label">Expenses YTD</div>
+                <div className="kpi-value">£6,210</div>
+                <div className="kpi-sub">18 receipts logged</div>
+              </div>
+            </div>
+
+            <div className="lower-section">
+              <div className="chart-card">
+                <div className="chart-title">Income vs expenses</div>
+                <div className="bars-container">
+                  {chartData.map((data) => (
+                    <div key={data.month} className="bar-group">
+                      <div className="bar-pair">
+                        <div className="bar income" style={{ height: `${data.income}%` }}></div>
+                        <div className="bar expense" style={{ height: `${data.expense}%` }}></div>
+                      </div>
+                      <div className="bar-label">{data.month}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="progress-card">
+                <div className="progress-title">Filing progress</div>
+                <div className="progress-ring">
+                  <div className="progress-inner">60%</div>
+                </div>
+                <div className="progress-label">3 of 5 steps complete</div>
+              </div>
+            </div>
+          </>
+        );
+      case "income":
+        return (
+          <div className="header-row" style={{ marginBottom: "20px" }}>
+            <div style={{ flex: 1 }}>
+              <div className="header-title" style={{ margin: 0 }}>Income</div>
+              <div style={{ fontSize: "14px", color: OKCH.neutral500, marginTop: "8px" }}>Track and manage your income sources</div>
+            </div>
+          </div>
+        );
+      case "expenses":
+        return (
+          <div className="header-row" style={{ marginBottom: "20px" }}>
+            <div style={{ flex: 1 }}>
+              <div className="header-title" style={{ margin: 0 }}>Expenses</div>
+              <div style={{ fontSize: "14px", color: OKCH.neutral500, marginTop: "8px" }}>Log and categorize your business expenses</div>
+            </div>
+          </div>
+        );
+      case "tax":
+        return (
+          <div className="header-row" style={{ marginBottom: "20px" }}>
+            <div style={{ flex: 1 }}>
+              <div className="header-title" style={{ margin: 0 }}>Tax Report</div>
+              <div style={{ fontSize: "14px", color: OKCH.neutral500, marginTop: "8px" }}>View your tax liability and estimates</div>
+            </div>
+          </div>
+        );
+      case "settings":
+        return (
+          <div className="header-row" style={{ marginBottom: "20px" }}>
+            <div style={{ flex: 1 }}>
+              <div className="header-title" style={{ margin: 0 }}>Settings</div>
+              <div style={{ fontSize: "14px", color: OKCH.neutral500, marginTop: "8px" }}>Manage your account preferences</div>
+            </div>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
     <div style={{ minHeight: "100vh", background: OKCH.neutral50, padding: "20px", display: "flex", alignItems: "center", justifyContent: "center" }}>
       <style>{styles}</style>
@@ -394,59 +492,7 @@ function Dashboard() {
 
         {/* Main Content */}
         <div className="main-content">
-          {/* Header */}
-          <div className="header-row">
-            <div>
-              <div>Tuesday, 11 July</div>
-              <div className="header-title">Morning, Priya 👋</div>
-            </div>
-            <div className="avatar"></div>
-          </div>
-
-          {/* KPI Cards */}
-          <div className="kpi-grid">
-            <div className="kpi-card hero">
-              <div className="kpi-label">Estimated tax owed</div>
-              <div className="kpi-value">£3,412.60</div>
-              <div className="kpi-sub">Due 31 Jan 2027</div>
-            </div>
-            <div className="kpi-card white">
-              <div className="kpi-label">Income YTD</div>
-              <div className="kpi-value">£38,960</div>
-              <div className="kpi-sub">↑ 12% vs last year</div>
-            </div>
-            <div className="kpi-card white">
-              <div className="kpi-label">Expenses YTD</div>
-              <div className="kpi-value">£6,210</div>
-              <div className="kpi-sub">18 receipts logged</div>
-            </div>
-          </div>
-
-          {/* Charts */}
-          <div className="lower-section">
-            <div className="chart-card">
-              <div className="chart-title">Income vs expenses</div>
-              <div className="bars-container">
-                {chartData.map((data) => (
-                  <div key={data.month} className="bar-group">
-                    <div className="bar-pair">
-                      <div className="bar income" style={{ height: `${data.income}%` }}></div>
-                      <div className="bar expense" style={{ height: `${data.expense}%` }}></div>
-                    </div>
-                    <div className="bar-label">{data.month}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="progress-card">
-              <div className="progress-title">Filing progress</div>
-              <div className="progress-ring">
-                <div className="progress-inner">60%</div>
-              </div>
-              <div className="progress-label">3 of 5 steps complete</div>
-            </div>
-          </div>
+          {renderContent()}
         </div>
       </div>
     </div>
