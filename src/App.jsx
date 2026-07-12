@@ -349,15 +349,14 @@ function Dashboard() {
   };
 
   return (
-    <div style={{ display: "flex", height: "100vh", backgroundColor: TOKENS.colors.neutral[50], fontFamily: "Inter, sans-serif" }}>
+    <div style={{ display: "flex", width: "100%", height: "100vh", backgroundColor: TOKENS.colors.neutral[50], fontFamily: "Inter, sans-serif" }}>
       {/* Sidebar */}
       <aside
         style={{
           width: "220px",
+          flex: "0 0 220px",
           backgroundColor: TOKENS.colors.neutral[900],
           color: "white",
-          position: "sticky",
-          top: 0,
           height: "100vh",
           overflowY: "auto",
           display: "flex",
@@ -423,8 +422,8 @@ function Dashboard() {
       </aside>
 
       {/* Main content */}
-      <main style={{ flex: 1, overflowY: "auto", width: "100%" }}>
-        <div style={{ width: "100%", padding: "32px 36px", boxSizing: "border-box" }}>
+      <main style={{ flex: 1, minWidth: 0, overflowY: "auto", backgroundColor: TOKENS.colors.neutral[50] }}>
+        <div style={{ width: "100%", maxWidth: "1440px", margin: "0 auto", padding: "32px 36px", boxSizing: "border-box" }}>
           {renderContent()}
         </div>
       </main>

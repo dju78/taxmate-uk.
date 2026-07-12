@@ -1,12 +1,27 @@
 /* Reset and base styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
-  color-scheme: dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #0B0F1A;
+  color-scheme: light;
+  color: #1A1F24;
+  background-color: #F7F8F9;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -17,7 +32,7 @@
 body {
   margin: 0;
   display: flex;
-  place-items: center;
+  width: 100%;
+  height: 100vh;
   min-width: 320px;
-  min-height: 100vh;
 }
