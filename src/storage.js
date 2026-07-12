@@ -30,9 +30,11 @@ export const INCOME_STATUS_OPTIONS = [
   INCOME_STATUS.OVERDUE,
 ];
 
+export const INCOME_STATUS_VALUES = Object.values(INCOME_STATUS);
+
 export const storageService = {
   // ---------------------------------------------------------------------------
-  // Normalisation helpers
+  // Normalisation / validation helpers
   // ---------------------------------------------------------------------------
 
   // Reduce any status value to its canonical lowercase form. Legacy records
@@ -41,6 +43,10 @@ export const storageService = {
     if (value === null || value === undefined) return '';
     return String(value).trim().toLowerCase();
   },
+
+  // Whether a value maps to one of the three allowed income statuses.
+  isValidIncomeStatus: (value) =>
+    INCOME_STATUS_VALUES.includes(storageService.normaliseIncomeStatus(value)),
 
   // Convert a monetary pounds value to integer pence. Summing in integer pence
   // avoids floating-point accumulation error (e.g. 0.1 + 0.2 !== 0.3).
@@ -120,6 +126,16 @@ export const storageService = {
     return Math.max(0, months);
   },
 
+  // Start of the CURRENT (incomplete) tax month = the exclusive upper bound of
+  // the completed-tax-month window. On 12 Jul 2026 (3 months complete) this is
+  // 6 Jul 2026, so income received 6-12 Jul is excluded from the completed-month
+  // average numerator (keeping numerator and denominator consistent).
+  getCurrentTaxMonthStart: (referenceDate = new Date()) => {
+    const start = storageService.getTaxYearStart(referenceDate);
+    const months = storageService.getCompletedTaxMonths(referenceDate);
+    return new Date(start.getFullYear(), start.getMonth() + months, start.getDate());
+  },
+
   // The first date on which a "per completed tax month" average is meaningful
   // (i.e. the day after the first tax month closes: 6 May of the tax year).
   getFirstAverageAvailableDate: (referenceDate = new Date()) => {
@@ -143,11 +159,15 @@ export const storageService = {
 
   addIncomeRecord: (record) => {
     try {
+      const status = storageService.normaliseIncomeStatus(record.status) || INCOME_STATUS.RECEIVED;
+      if (!INCOME_STATUS_VALUES.includes(status)) {
+        throw new Error(`Invalid income status: ${record.status}`);
+      }
       const records = storageService.getIncomeRecords();
       const newRecord = {
         id: Date.now().toString(),
         ...record,
-        status: storageService.normaliseIncomeStatus(record.status) || INCOME_STATUS.RECEIVED,
+        status,
         createdAt: new Date().toISOString(),
       };
       records.push(newRecord);
@@ -168,7 +188,11 @@ export const storageService = {
       }
       const normalisedUpdates = { ...updates };
       if (updates.status !== undefined) {
-        normalisedUpdates.status = storageService.normaliseIncomeStatus(updates.status);
+        const status = storageService.normaliseIncomeStatus(updates.status);
+        if (!INCOME_STATUS_VALUES.includes(status)) {
+          throw new Error(`Invalid income status: ${updates.status}`);
+        }
+        normalisedUpdates.status = status;
       }
       records[index] = {
         ...records[index],
@@ -215,9 +239,29 @@ export const storageService = {
     return storageService.sumAmounts(inYear);
   },
 
-  // Total invoiced = every income entry in the tax year (all statuses).
-  calculateTotalInvoiced: (referenceDate = new Date(), records) =>
-    storageService.sumIncome(null, referenceDate, records),
+  // Sum received income within an explicit [startInclusive, endExclusive) window.
+  sumIncomeInWindow: (status, startInclusive, endExclusive, records) => {
+    const canonical = status ? storageService.normaliseIncomeStatus(status) : null;
+    const source = records || storageService.getIncomeRecords();
+    const matches = source.filter(r => {
+      const d = storageService.parseLocalDate(r.date);
+      return (
+        d >= startInclusive &&
+        d < endExclusive &&
+        (canonical ? storageService.normaliseIncomeStatus(r.status) === canonical : true)
+      );
+    });
+    return storageService.sumAmounts(matches);
+  },
+
+  // Total invoiced = every VALID-status income entry in the tax year. Restricting
+  // to valid statuses guarantees invoiced === received + outstanding + overdue.
+  calculateTotalInvoiced: (referenceDate = new Date(), records) => {
+    const valid = storageService
+      .getIncomeInTaxYear(records, referenceDate)
+      .filter(r => storageService.isValidIncomeStatus(r.status));
+    return storageService.sumAmounts(valid);
+  },
 
   // Total received = money actually collected (status "received").
   calculateTotalReceived: (referenceDate = new Date(), records) =>
@@ -251,19 +295,25 @@ export const storageService = {
   },
 
   // Average RECEIVED income per COMPLETED tax month in the active tax year.
-  // Returns null while no tax month has completed (before 6 May of the year),
-  // so the UI never divides by one and mislabels a partial-month figure.
+  // Numerator counts ONLY income received within completed tax months
+  // [taxYearStart, currentTaxMonthStart); the current incomplete month is
+  // excluded from both numerator and denominator so the figure is consistent.
+  // Returns null while no tax month has completed (before 6 May of the year).
   calculateAverageMonthlyIncome: (referenceDate = new Date(), records) => {
     const months = storageService.getCompletedTaxMonths(referenceDate);
     if (months < 1) return null;
-    const received = storageService.calculateTotalReceived(referenceDate, records);
+    const start = storageService.getTaxYearStart(referenceDate);
+    const cutoff = storageService.getCurrentTaxMonthStart(referenceDate);
+    const received = storageService.sumIncomeInWindow(INCOME_STATUS.RECEIVED, start, cutoff, records);
     return storageService.roundCurrency(received / months);
   },
 
-  getIncomeByMonth: (records) => {
-    const source = records || storageService.getIncomeRecords();
+  // Received income grouped by month, RESTRICTED to the active tax year so the
+  // chart reconciles with the KPI cards.
+  getIncomeByMonth: (records, referenceDate = new Date()) => {
+    const inYear = storageService.getIncomeInTaxYear(records, referenceDate);
     const pence = {};
-    source
+    inYear
       .filter(r => storageService.normaliseIncomeStatus(r.status) === INCOME_STATUS.RECEIVED)
       .forEach(r => {
         const date = storageService.parseLocalDate(r.date);
@@ -273,10 +323,11 @@ export const storageService = {
     return Object.fromEntries(Object.entries(pence).map(([k, v]) => [k, v / 100]));
   },
 
-  getIncomeBySource: (records) => {
-    const source = records || storageService.getIncomeRecords();
+  // Received income grouped by source, RESTRICTED to the active tax year.
+  getIncomeBySource: (records, referenceDate = new Date()) => {
+    const inYear = storageService.getIncomeInTaxYear(records, referenceDate);
     const pence = {};
-    source
+    inYear
       .filter(r => storageService.normaliseIncomeStatus(r.status) === INCOME_STATUS.RECEIVED)
       .forEach(r => {
         const key = r.source || 'Other';
@@ -366,6 +417,16 @@ export const storageService = {
     return source.filter(r => storageService.isInActiveTaxYear(r.date, referenceDate));
   },
 
+  // Sum recorded expenses within an explicit [startInclusive, endExclusive) window.
+  sumExpensesInWindow: (startInclusive, endExclusive, records) => {
+    const source = records || storageService.getExpenseRecords();
+    const matches = source.filter(r => {
+      const d = storageService.parseLocalDate(r.date);
+      return d >= startInclusive && d < endExclusive;
+    });
+    return storageService.sumAmounts(matches);
+  },
+
   // Total recorded expenses in the active tax year.
   calculateTotalExpensesYTD: (referenceDate = new Date(), records) =>
     storageService.sumAmounts(storageService.getExpensesInTaxYear(records, referenceDate)),
@@ -380,19 +441,23 @@ export const storageService = {
     return storageService.sumAmounts(matches);
   },
 
-  // Average RECORDED expenses per COMPLETED tax month in the active tax year.
+  // Average RECORDED expenses per COMPLETED tax month. Numerator counts only
+  // expenses in completed tax months [taxYearStart, currentTaxMonthStart).
   // Returns null while no tax month has completed (see income average note).
   calculateAverageMonthlyExpenses: (referenceDate = new Date(), records) => {
     const months = storageService.getCompletedTaxMonths(referenceDate);
     if (months < 1) return null;
-    const total = storageService.calculateTotalExpensesYTD(referenceDate, records);
+    const start = storageService.getTaxYearStart(referenceDate);
+    const cutoff = storageService.getCurrentTaxMonthStart(referenceDate);
+    const total = storageService.sumExpensesInWindow(start, cutoff, records);
     return storageService.roundCurrency(total / months);
   },
 
-  getExpensesByMonth: (records) => {
-    const source = records || storageService.getExpenseRecords();
+  // Expenses grouped by month, RESTRICTED to the active tax year.
+  getExpensesByMonth: (records, referenceDate = new Date()) => {
+    const inYear = storageService.getExpensesInTaxYear(records, referenceDate);
     const pence = {};
-    source.forEach(r => {
+    inYear.forEach(r => {
       const date = storageService.parseLocalDate(r.date);
       const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       pence[key] = (pence[key] || 0) + storageService.toPence(r.amount);
@@ -400,10 +465,11 @@ export const storageService = {
     return Object.fromEntries(Object.entries(pence).map(([k, v]) => [k, v / 100]));
   },
 
-  getExpensesByCategory: (records) => {
-    const source = records || storageService.getExpenseRecords();
+  // Expenses grouped by category, RESTRICTED to the active tax year.
+  getExpensesByCategory: (records, referenceDate = new Date()) => {
+    const inYear = storageService.getExpensesInTaxYear(records, referenceDate);
     const pence = {};
-    source.forEach(r => {
+    inYear.forEach(r => {
       const key = r.category || 'Other';
       pence[key] = (pence[key] || 0) + storageService.toPence(r.amount);
     });

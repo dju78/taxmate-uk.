@@ -180,29 +180,47 @@ function Dashboard() {
     { id: "dashboard", label: "Dashboard", Icon: Icons.Dashboard },
     { id: "income", label: "Income", Icon: Icons.Income },
     { id: "expenses", label: "Expenses", Icon: Icons.Expenses },
-    { id: "tax", label: "Tax report", Icon: Icons.Tax },
+    { id: "tax", label: "Tax estimate", Icon: Icons.Tax },
     { id: "settings", label: "Settings", Icon: Icons.Settings },
-  ];
-
-  const chartData = [
-    { month: "Feb", income: 55, expense: 20 },
-    { month: "Mar", income: 70, expense: 25 },
-    { month: "Apr", income: 60, expense: 18 },
-    { month: "May", income: 85, expense: 30 },
-    { month: "Jun", income: 75, expense: 22 },
-    { month: "Jul", income: 95, expense: 28 },
   ];
 
   const renderContent = () => {
     switch (activeNav) {
-      case "dashboard":
+      case "dashboard": {
+        const now = new Date();
+        const dateLabel = now
+          .toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })
+          .toUpperCase();
+        const greeting = now.getHours() < 12 ? "Morning" : now.getHours() < 18 ? "Afternoon" : "Evening";
+        const taxYearStart = storageService.getTaxYearStart();
+        const taxYearLabel = `${taxYearStart.getFullYear()}/${String((taxYearStart.getFullYear() + 1) % 100).padStart(2, "0")}`;
+
+        const incomeReceivedYTD = storageService.calculateTotalReceived();
+        const expensesYTD = storageService.calculateTotalExpensesYTD();
+        const netProfitYTD = storageService.roundCurrency(incomeReceivedYTD - expensesYTD);
+        const receiptsCount = storageService.getExpensesInTaxYear(expenseRecords).length;
+
+        const dashIncomeByMonth = storageService.getIncomeByMonth();
+        const dashExpensesByMonth = storageService.getExpensesByMonth();
+        const monthKeys = Array.from(
+          new Set([...Object.keys(dashIncomeByMonth), ...Object.keys(dashExpensesByMonth)])
+        ).sort();
+        const maxMonthly = Math.max(
+          1,
+          ...monthKeys.map((k) => Math.max(dashIncomeByMonth[k] || 0, dashExpensesByMonth[k] || 0))
+        );
+        const monthShort = (key) => {
+          const [y, m] = key.split("-").map(Number);
+          return new Date(y, m - 1, 1).toLocaleDateString("en-GB", { month: "short" });
+        };
+
         return (
           <>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "32px" }}>
               <div>
-                <div style={{ fontSize: "13px", color: TOKENS.colors.neutral[500], fontWeight: "600" }}>TUESDAY, 11 JULY</div>
+                <div style={{ fontSize: "13px", color: TOKENS.colors.neutral[500], fontWeight: "600" }}>{dateLabel}</div>
                 <h1 style={{ fontSize: "36px", fontWeight: "800", color: TOKENS.colors.neutral[900], marginTop: "8px", fontFamily: "Manrope, sans-serif" }}>
-                  Morning, Priya 👋
+                  {greeting}, Priya 👋
                 </h1>
               </div>
               <div style={{ width: "40px", height: "40px", backgroundColor: TOKENS.colors.green[200], borderRadius: "50%" }}></div>
@@ -210,100 +228,83 @@ function Dashboard() {
 
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px", marginBottom: "24px" }}>
               <div style={{ backgroundColor: TOKENS.colors.green[500], color: "white", borderRadius: "14px", padding: "20px" }}>
-                <div style={{ fontSize: "13px", fontWeight: "600", opacity: 0.9 }}>Estimated tax owed</div>
-                <div style={{ fontSize: "30px", fontWeight: "800", marginTop: "8px", fontFamily: "Manrope, sans-serif" }}>£3,412.60</div>
-                <div style={{ fontSize: "13px", opacity: 0.85, marginTop: "8px" }}>Due 31 Jan 2027</div>
+                <div style={{ fontSize: "13px", fontWeight: "600", opacity: 0.9 }}>Net profit YTD</div>
+                <div style={{ fontSize: "30px", fontWeight: "800", marginTop: "8px", fontFamily: "Manrope, sans-serif" }}>£{netProfitYTD.toFixed(2)}</div>
+                <div style={{ fontSize: "13px", opacity: 0.85, marginTop: "8px" }}>Received income − expenses · {taxYearLabel}</div>
               </div>
               <div style={{ backgroundColor: "white", border: `1px solid ${TOKENS.colors.neutral[200]}`, borderRadius: "14px", padding: "20px" }}>
-                <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[500] }}>Income YTD</div>
+                <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[500] }}>Income received YTD</div>
                 <div style={{ fontSize: "30px", fontWeight: "800", color: TOKENS.colors.neutral[900], marginTop: "8px", fontFamily: "Manrope, sans-serif" }}>
-                  £38,960
+                  £{incomeReceivedYTD.toFixed(2)}
                 </div>
-                <div style={{ fontSize: "13px", color: TOKENS.colors.green[600], marginTop: "8px" }}>↑ 12% vs last year</div>
+                <div style={{ fontSize: "13px", color: TOKENS.colors.neutral[600], marginTop: "8px" }}>Tax year {taxYearLabel}</div>
               </div>
               <div style={{ backgroundColor: "white", border: `1px solid ${TOKENS.colors.neutral[200]}`, borderRadius: "14px", padding: "20px" }}>
                 <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[500] }}>Expenses YTD</div>
                 <div style={{ fontSize: "30px", fontWeight: "800", color: TOKENS.colors.neutral[900], marginTop: "8px", fontFamily: "Manrope, sans-serif" }}>
-                  £6,210
+                  £{expensesYTD.toFixed(2)}
                 </div>
-                <div style={{ fontSize: "13px", color: TOKENS.colors.neutral[600], marginTop: "8px" }}>18 receipts logged</div>
+                <div style={{ fontSize: "13px", color: TOKENS.colors.neutral[600], marginTop: "8px" }}>{receiptsCount} receipt{receiptsCount === 1 ? "" : "s"} logged</div>
               </div>
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: "16px" }}>
               <div style={{ backgroundColor: "white", border: `1px solid ${TOKENS.colors.neutral[200]}`, borderRadius: "14px", padding: "24px" }}>
                 <h3 style={{ fontSize: "18px", fontWeight: "700", marginBottom: "16px", fontFamily: "Manrope, sans-serif" }}>
-                  Income vs expenses
+                  Income vs expenses <span style={{ fontSize: "13px", fontWeight: "500", color: TOKENS.colors.neutral[500] }}>· {taxYearLabel}</span>
                 </h3>
-                <div style={{ display: "flex", alignItems: "flex-end", gap: "8px", height: "160px" }}>
-                  {chartData.map((data) => (
-                    <div key={data.month} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
-                      <div style={{ width: "100%", display: "flex", gap: "4px", alignItems: "flex-end", height: "100%" }}>
-                        <div
-                          style={{
-                            flex: 1,
-                            backgroundColor: TOKENS.colors.green[500],
-                            borderTopLeftRadius: "4px",
-                            borderTopRightRadius: "4px",
-                            height: `${data.income}%`,
-                          }}
-                        ></div>
-                        <div
-                          style={{
-                            flex: 1,
-                            backgroundColor: TOKENS.colors.green[200],
-                            borderTopLeftRadius: "4px",
-                            borderTopRightRadius: "4px",
-                            height: `${data.expense}%`,
-                          }}
-                        ></div>
-                      </div>
-                      <span style={{ fontSize: "12px", color: TOKENS.colors.neutral[600] }}>{data.month}</span>
+                {monthKeys.length === 0 ? (
+                  <p style={{ fontSize: "14px", color: TOKENS.colors.neutral[600] }}>No transactions recorded for this tax year yet.</p>
+                ) : (
+                  <>
+                    <div style={{ display: "flex", alignItems: "flex-end", gap: "8px", height: "160px" }}>
+                      {monthKeys.map((key) => (
+                        <div key={key} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
+                          <div style={{ width: "100%", display: "flex", gap: "4px", alignItems: "flex-end", height: "100%" }}>
+                            <div
+                              title={`Received £${(dashIncomeByMonth[key] || 0).toFixed(2)}`}
+                              style={{ flex: 1, backgroundColor: TOKENS.colors.green[500], borderTopLeftRadius: "4px", borderTopRightRadius: "4px", height: `${((dashIncomeByMonth[key] || 0) / maxMonthly) * 100}%` }}
+                            ></div>
+                            <div
+                              title={`Expenses £${(dashExpensesByMonth[key] || 0).toFixed(2)}`}
+                              style={{ flex: 1, backgroundColor: TOKENS.colors.green[200], borderTopLeftRadius: "4px", borderTopRightRadius: "4px", height: `${((dashExpensesByMonth[key] || 0) / maxMonthly) * 100}%` }}
+                            ></div>
+                          </div>
+                          <span style={{ fontSize: "12px", color: TOKENS.colors.neutral[600] }}>{monthShort(key)}</span>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                    <div style={{ display: "flex", gap: "16px", marginTop: "12px", fontSize: "12px", color: TOKENS.colors.neutral[600] }}>
+                      <span><span style={{ display: "inline-block", width: "10px", height: "10px", backgroundColor: TOKENS.colors.green[500], borderRadius: "2px", marginRight: "4px" }}></span>Received</span>
+                      <span><span style={{ display: "inline-block", width: "10px", height: "10px", backgroundColor: TOKENS.colors.green[200], borderRadius: "2px", marginRight: "4px" }}></span>Expenses</span>
+                    </div>
+                  </>
+                )}
               </div>
 
-              <div style={{ backgroundColor: "white", border: `1px solid ${TOKENS.colors.neutral[200]}`, borderRadius: "14px", padding: "24px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-                <h3 style={{ fontSize: "18px", fontWeight: "700", marginBottom: "24px", width: "100%", fontFamily: "Manrope, sans-serif" }}>
-                  Filing progress
+              <div style={{ backgroundColor: "white", border: `1px solid ${TOKENS.colors.neutral[200]}`, borderRadius: "14px", padding: "24px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                <h3 style={{ fontSize: "18px", fontWeight: "700", marginBottom: "16px", fontFamily: "Manrope, sans-serif" }}>
+                  This tax year
                 </h3>
-                <div
-                  style={{
-                    width: "128px",
-                    height: "128px",
-                    borderRadius: "50%",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontWeight: "700",
-                    fontSize: "20px",
-                    background: "conic-gradient(rgb(58, 162, 90) 0deg 216deg, rgb(229, 231, 235) 216deg 360deg)",
-                  }}
-                >
-                  <div
-                    style={{
-                      width: "96px",
-                      height: "96px",
-                      backgroundColor: "white",
-                      borderRadius: "50%",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontWeight: "700",
-                      fontSize: "18px",
-                    }}
-                  >
-                    60%
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span style={{ fontSize: "13px", color: TOKENS.colors.neutral[600] }}>Outstanding</span>
+                    <span style={{ fontSize: "13px", fontWeight: "700", color: TOKENS.colors.semantic.warning }}>£{storageService.calculateOutstanding().toFixed(2)}</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span style={{ fontSize: "13px", color: TOKENS.colors.neutral[600] }}>Overdue</span>
+                    <span style={{ fontSize: "13px", fontWeight: "700", color: TOKENS.colors.semantic.danger }}>£{storageService.calculateOverdue().toFixed(2)}</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", borderTop: `1px solid ${TOKENS.colors.neutral[200]}`, paddingTop: "12px" }}>
+                    <span style={{ fontSize: "13px", color: TOKENS.colors.neutral[600] }}>Invoiced total</span>
+                    <span style={{ fontSize: "13px", fontWeight: "700", color: TOKENS.colors.neutral[900] }}>£{storageService.calculateTotalInvoiced().toFixed(2)}</span>
                   </div>
                 </div>
-                <p style={{ fontSize: "13px", color: TOKENS.colors.neutral[600], marginTop: "16px", textAlign: "center" }}>
-                  3 of 5 steps complete
-                </p>
               </div>
             </div>
           </>
         );
+      }
 
       case "income": {
         const totalReceived = storageService.calculateTotalReceived();
@@ -361,7 +362,7 @@ function Dashboard() {
         const getStatusLabel = (status) =>
           INCOME_STATUS_LABELS[storageService.normaliseIncomeStatus(status)] || status;
 
-        const sortedRecords = [...incomeRecords].sort((a, b) => new Date(b.date) - new Date(a.date));
+        const sortedRecords = [...incomeRecords].sort((a, b) => storageService.parseLocalDate(b.date) - storageService.parseLocalDate(a.date));
 
         return (
           <>
@@ -464,7 +465,7 @@ function Dashboard() {
                       <tbody>
                         {sortedRecords.map((record) => (
                           <tr key={record.id} style={{ borderBottom: `1px solid ${TOKENS.colors.neutral[200]}` }}>
-                            <td style={{ padding: "12px 16px" }}>{new Date(record.date).toLocaleDateString()}</td>
+                            <td style={{ padding: "12px 16px" }}>{storageService.parseLocalDate(record.date).toLocaleDateString()}</td>
                             <td style={{ padding: "12px 16px" }}>{record.source}</td>
                             <td style={{ padding: "12px 16px" }}>{record.category}</td>
                             <td style={{ padding: "12px 16px", fontWeight: "600" }}>£{parseFloat(record.amount).toFixed(2)}</td>
@@ -624,7 +625,7 @@ function Dashboard() {
         };
 
         const editingRecord = editingExpenseId ? storageService.getExpenseRecord(editingExpenseId) : null;
-        const sortedRecords = [...expenseRecords].sort((a, b) => new Date(b.date) - new Date(a.date));
+        const sortedRecords = [...expenseRecords].sort((a, b) => storageService.parseLocalDate(b.date) - storageService.parseLocalDate(a.date));
 
         return (
           <>
@@ -703,7 +704,7 @@ function Dashboard() {
                       <tbody>
                         {sortedRecords.map((record) => (
                           <tr key={record.id} style={{ borderBottom: `1px solid ${TOKENS.colors.neutral[200]}` }}>
-                            <td style={{ padding: "12px 16px" }}>{new Date(record.date).toLocaleDateString()}</td>
+                            <td style={{ padding: "12px 16px" }}>{storageService.parseLocalDate(record.date).toLocaleDateString()}</td>
                             <td style={{ padding: "12px 16px" }}>{record.merchant}</td>
                             <td style={{ padding: "12px 16px" }}>{record.category}</td>
                             <td style={{ padding: "12px 16px", fontWeight: "600" }}>£{parseFloat(record.amount).toFixed(2)}</td>
@@ -824,41 +825,54 @@ function Dashboard() {
         );
       }
 
-      case "tax":
+      case "tax": {
+        const taxYearStart = storageService.getTaxYearStart();
+        const taxYearLabel = `${taxYearStart.getFullYear()}/${String((taxYearStart.getFullYear() + 1) % 100).padStart(2, "0")}`;
+        const receivedYTD = storageService.calculateTotalReceived();
+        const expensesYTD = storageService.calculateTotalExpensesYTD();
+        const netProfitYTD = storageService.roundCurrency(receivedYTD - expensesYTD);
+
         return (
           <>
             <div style={{ marginBottom: "32px" }}>
               <h1 style={{ fontSize: "36px", fontWeight: "800", color: TOKENS.colors.neutral[900], fontFamily: "Manrope, sans-serif" }}>
-                Tax Report
+                Tax estimate preview
               </h1>
-              <p style={{ color: TOKENS.colors.neutral[600], marginTop: "8px" }}>View your tax liability and estimates</p>
+              <p style={{ color: TOKENS.colors.neutral[600], marginTop: "8px" }}>Figures below are drawn from your recorded transactions for {taxYearLabel}.</p>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px", marginBottom: "24px" }}>
-              <div style={{ backgroundColor: TOKENS.colors.green[500], color: "white", borderRadius: "14px", padding: "20px" }}>
-                <div style={{ fontSize: "13px", fontWeight: "600", opacity: 0.9 }}>Estimated tax bill</div>
-                <div style={{ fontSize: "30px", fontWeight: "800", marginTop: "8px", fontFamily: "Manrope, sans-serif" }}>£4,200</div>
-                <div style={{ fontSize: "13px", opacity: 0.85, marginTop: "8px" }}>2025/26 Tax Year</div>
+            <Alert
+              variant="warning"
+              title="Estimate not yet available"
+              description="A Self Assessment tax estimate needs tested UK tax rules (personal allowance, bands, Class 2/4 NICs) that are not implemented yet. The figures below are your actual recorded income and expenses — not a tax calculation."
+            />
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px", marginTop: "24px" }}>
+              <div style={{ backgroundColor: "white", border: `1px solid ${TOKENS.colors.neutral[200]}`, borderRadius: "14px", padding: "20px" }}>
+                <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[500] }}>Income received</div>
+                <div style={{ fontSize: "30px", fontWeight: "800", color: TOKENS.colors.neutral[900], marginTop: "8px", fontFamily: "Manrope, sans-serif" }}>
+                  £{receivedYTD.toFixed(2)}
+                </div>
+                <div style={{ fontSize: "13px", color: TOKENS.colors.neutral[600], marginTop: "8px" }}>Tax year {taxYearLabel}</div>
               </div>
               <div style={{ backgroundColor: "white", border: `1px solid ${TOKENS.colors.neutral[200]}`, borderRadius: "14px", padding: "20px" }}>
-                <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[500] }}>Tax reserved</div>
+                <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[500] }}>Expenses recorded</div>
                 <div style={{ fontSize: "30px", fontWeight: "800", color: TOKENS.colors.neutral[900], marginTop: "8px", fontFamily: "Manrope, sans-serif" }}>
-                  £1,820
+                  £{expensesYTD.toFixed(2)}
                 </div>
-                <div style={{ fontSize: "13px", color: TOKENS.colors.neutral[600], marginTop: "8px" }}>43% of estimate</div>
+                <div style={{ fontSize: "13px", color: TOKENS.colors.neutral[600], marginTop: "8px" }}>Tax year {taxYearLabel}</div>
               </div>
               <div style={{ backgroundColor: "white", border: `1px solid ${TOKENS.colors.neutral[200]}`, borderRadius: "14px", padding: "20px" }}>
-                <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[500] }}>Still required</div>
+                <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[500] }}>Net profit (pre-tax)</div>
                 <div style={{ fontSize: "30px", fontWeight: "800", color: TOKENS.colors.neutral[900], marginTop: "8px", fontFamily: "Manrope, sans-serif" }}>
-                  £2,380
+                  £{netProfitYTD.toFixed(2)}
                 </div>
-                <div style={{ fontSize: "13px", color: TOKENS.colors.neutral[600], marginTop: "8px" }}>Due by 31 Jan 2027</div>
+                <div style={{ fontSize: "13px", color: TOKENS.colors.neutral[600], marginTop: "8px" }}>Received income − expenses</div>
               </div>
             </div>
-
-            <Alert variant="warning" title="⚠️ Upcoming Deadline" description="Payment on account due 31 July 2026. Set aside £350 per month." />
           </>
         );
+      }
 
       case "settings":
         return (

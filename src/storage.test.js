@@ -266,3 +266,123 @@ describe('currency rounding', () => {
     expect(storageService.roundCurrency(2 / 3)).toBe(0.67);
   });
 });
+
+describe('getCurrentTaxMonthStart (completed-month window boundary)', () => {
+  it('is 6 July 2026 on 12 July 2026 (3 months complete)', () => {
+    expectDate(storageService.getCurrentTaxMonthStart(new Date(2026, 6, 12)), 2026, 7, 6);
+  });
+
+  it('equals the tax year start on 6 April (0 months complete)', () => {
+    expectDate(storageService.getCurrentTaxMonthStart(new Date(2026, 3, 6)), 2026, 4, 6);
+  });
+
+  it('is 6 March 2027 in the final tax month of 2026/27', () => {
+    expectDate(storageService.getCurrentTaxMonthStart(new Date(2027, 2, 20)), 2027, 3, 6);
+  });
+
+  it('getCompletedTaxMonths respects the 5th/6th day within a mid-year month', () => {
+    expect(storageService.getCompletedTaxMonths(new Date(2026, 6, 5))).toBe(2); // 5 Jul
+    expect(storageService.getCompletedTaxMonths(new Date(2026, 6, 6))).toBe(3); // 6 Jul
+  });
+});
+
+describe('average excludes income from the current incomplete tax month', () => {
+  it('income received 6-12 July is in the YTD total but NOT the average numerator', () => {
+    const ref = new Date(2026, 6, 12); // 12 July 2026, 3 months complete, cutoff 6 Jul
+    const records = [
+      { id: 'a', date: '2026-05-10', amount: '3000', status: 'received' }, // completed month
+      { id: 'b', date: '2026-07-10', amount: '900', status: 'received' },  // current incomplete month
+    ];
+    // YTD received includes both; the average numerator excludes the 10 July £900.
+    expect(storageService.calculateTotalReceived(ref, records)).toBe(3900);
+    expect(storageService.calculateAverageMonthlyIncome(ref, records)).toBe(1000); // 3000 / 3
+  });
+
+  it('pending income in the current incomplete month is excluded from the average', () => {
+    const ref = new Date(2026, 6, 12);
+    const records = [
+      { id: 'a', date: '2026-05-10', amount: '3000', status: 'received' },
+      { id: 'b', date: '2026-07-08', amount: '500', status: 'pending' },
+    ];
+    expect(storageService.calculateAverageMonthlyIncome(ref, records)).toBe(1000);
+  });
+
+  it('works in the final tax month of the year', () => {
+    const ref = new Date(2027, 2, 20); // 20 March 2027, 11 months complete, cutoff 6 Mar 2027
+    const records = [
+      { id: 'a', date: '2026-06-01', amount: '1100', status: 'received' }, // completed month
+      { id: 'b', date: '2027-03-10', amount: '500', status: 'received' },  // current incomplete month
+    ];
+    expect(storageService.calculateTotalReceived(ref, records)).toBe(1600);
+    expect(storageService.calculateAverageMonthlyIncome(ref, records)).toBe(100); // 1100 / 11
+  });
+
+  it('expense average likewise excludes the current incomplete tax month', () => {
+    const ref = new Date(2026, 6, 12);
+    const records = [
+      { id: 'a', date: '2026-05-10', amount: '300', category: 'Supplies' },
+      { id: 'b', date: '2026-07-09', amount: '999', category: 'Travel' }, // current incomplete month
+    ];
+    expect(storageService.calculateTotalExpensesYTD(ref, records)).toBe(1299);
+    expect(storageService.calculateAverageMonthlyExpenses(ref, records)).toBe(100); // 300 / 3
+  });
+});
+
+describe('status validation and reconciliation', () => {
+  const ref = new Date(2026, 6, 12);
+  const records = [
+    { id: '1', date: '2026-05-10', amount: '100', status: 'received' },
+    { id: '2', date: '2026-05-11', amount: '50', status: 'pending' },
+    { id: '3', date: '2026-05-12', amount: '30', status: 'overdue' },
+    { id: '4', date: '2026-05-13', amount: '999', status: 'archived' }, // unknown/invalid status
+  ];
+
+  it('isValidIncomeStatus accepts only the three canonical statuses', () => {
+    expect(storageService.isValidIncomeStatus('Received')).toBe(true);
+    expect(storageService.isValidIncomeStatus('  pending ')).toBe(true);
+    expect(storageService.isValidIncomeStatus('OVERDUE')).toBe(true);
+    expect(storageService.isValidIncomeStatus('archived')).toBe(false);
+    expect(storageService.isValidIncomeStatus(undefined)).toBe(false);
+  });
+
+  it('an unknown status is NOT silently counted in total invoiced', () => {
+    // Invoiced counts only valid statuses: 100 + 50 + 30 = 180 (excludes 999).
+    expect(storageService.calculateTotalInvoiced(ref, records)).toBe(180);
+  });
+
+  it('reconciles: total invoiced === received + outstanding + overdue', () => {
+    const invoiced = storageService.calculateTotalInvoiced(ref, records);
+    const received = storageService.calculateTotalReceived(ref, records);
+    const outstanding = storageService.calculateOutstanding(ref, records);
+    const overdue = storageService.calculateOverdue(ref, records);
+    expect(invoiced).toBe(storageService.roundCurrency(received + outstanding + overdue));
+  });
+});
+
+describe('charts are restricted to the active tax year', () => {
+  const ref = new Date(2026, 6, 12); // tax year 2026/27
+  const incomeRecords = [
+    { id: '1', date: '2026-05-10', amount: '1000', source: 'Alpha', status: 'received' },
+    { id: '2', date: '2025-02-01', amount: '5000', source: 'Beta', status: 'received' }, // prior tax year
+  ];
+  const expenseRecords = [
+    { id: '1', date: '2026-05-10', amount: '200', category: 'Supplies' },
+    { id: '2', date: '2025-02-01', amount: '800', category: 'Travel' }, // prior tax year
+  ];
+
+  it('getIncomeByMonth omits prior-tax-year months', () => {
+    const byMonth = storageService.getIncomeByMonth(incomeRecords, ref);
+    expect(Object.keys(byMonth)).toEqual(['2026-05']);
+    expect(byMonth['2026-05']).toBe(1000);
+  });
+
+  it('getIncomeBySource omits prior-tax-year sources', () => {
+    const bySource = storageService.getIncomeBySource(incomeRecords, ref);
+    expect(bySource).toEqual({ Alpha: 1000 });
+  });
+
+  it('getExpensesByMonth and getExpensesByCategory omit prior tax years', () => {
+    expect(storageService.getExpensesByMonth(expenseRecords, ref)).toEqual({ '2026-05': 200 });
+    expect(storageService.getExpensesByCategory(expenseRecords, ref)).toEqual({ Supplies: 200 });
+  });
+});
