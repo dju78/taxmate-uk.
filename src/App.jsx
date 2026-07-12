@@ -7,6 +7,8 @@ import { storageService, INCOME_STATUS, INCOME_STATUS_LABELS } from "./storage";
 import { useBreakpoint, useDialog } from "./hooks";
 import { useTaxStore, taxYearStartToLabel } from "./store";
 import { TaxYearSelector } from "./TaxYearSelector";
+import { AddTransactionButton } from "./AddTransactionButton";
+import { StorageNoticeBanner } from "./StorageNoticeBanner";
 
 // SVG Icons
 const Icons = {
@@ -283,6 +285,45 @@ function Dashboard() {
     downloadFile(`taxmate-expenses-${yearTag}-${stamp()}.csv`, expenses || 'No expense records', 'text/csv');
   };
 
+  // Transaction form handlers + modals live at the App level so the global
+  // "+ Add transaction" action can open them from any view.
+  const handleSaveIncome = (formData) => {
+    try {
+      if (editingIncomeId) {
+        storeUpdateIncome(editingIncomeId, formData);
+        setSuccessMessage('Income record updated successfully');
+      } else {
+        storeAddIncome(formData);
+        setSuccessMessage('Income record added successfully');
+      }
+      setShowIncomeModal(false);
+      setEditingIncomeId(null);
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (error) {
+      console.error('Error saving income record:', error);
+    }
+  };
+  const handleSaveExpense = (formData) => {
+    try {
+      if (editingExpenseId) {
+        storeUpdateExpense(editingExpenseId, formData);
+        setSuccessMessage('Expense record updated successfully');
+      } else {
+        storeAddExpense(formData);
+        setSuccessMessage('Expense record added successfully');
+      }
+      setShowExpenseModal(false);
+      setEditingExpenseId(null);
+      setTimeout(() => setSuccessMessage(null), 3000);
+    } catch (error) {
+      console.error('Error saving expense record:', error);
+    }
+  };
+  const editingIncomeRecord = editingIncomeId ? storageService.getIncomeRecord(editingIncomeId) : null;
+  const editingExpenseRecord = editingExpenseId ? storageService.getExpenseRecord(editingExpenseId) : null;
+  const openAddIncome = () => { setEditingIncomeId(null); setShowIncomeModal(true); };
+  const openAddExpense = () => { setEditingExpenseId(null); setShowExpenseModal(true); };
+
   const { isMobile, isTablet } = useBreakpoint();
   // KPI grid columns per breakpoint (used across sections).
   const kpiCols = isMobile ? "1fr" : isTablet ? "repeat(2, 1fr)" : "repeat(3, 1fr)";
@@ -436,23 +477,6 @@ function Dashboard() {
         const incomeBySource = storageService.getIncomeBySource(incomeRecords, taxRef);
         const isCurrentYear = storageService.isCurrentTaxYear(selectedTaxYear);
 
-        const handleSaveIncome = (formData) => {
-          try {
-            if (editingIncomeId) {
-              storeUpdateIncome(editingIncomeId, formData);
-              setSuccessMessage('Income record updated successfully');
-            } else {
-              storeAddIncome(formData);
-              setSuccessMessage('Income record added successfully');
-            }
-            setShowIncomeModal(false);
-            setEditingIncomeId(null);
-            setTimeout(() => setSuccessMessage(null), 3000);
-          } catch (error) {
-            console.error('Error saving income record:', error);
-          }
-        };
-
         const handleEditIncome = (id) => {
           setEditingIncomeId(id);
           setShowIncomeModal(true);
@@ -461,8 +485,6 @@ function Dashboard() {
         const handleDeleteIncome = (id) => {
           setConfirmDialog({ isOpen: true, type: 'income', id });
         };
-
-        const editingRecord = editingIncomeId ? storageService.getIncomeRecord(editingIncomeId) : null;
 
         const getStatusBadgeVariant = (status) => {
           const s = storageService.normaliseIncomeStatus(status);
@@ -643,18 +665,6 @@ function Dashboard() {
                 )}
               </>
             )}
-
-            <Modal
-              isOpen={showIncomeModal}
-              onClose={() => { setShowIncomeModal(false); setEditingIncomeId(null); }}
-              title={editingIncomeId ? 'Edit Income' : 'Add Income'}
-            >
-              <IncomeForm
-                initialData={editingRecord}
-                onSubmit={handleSaveIncome}
-                onCancel={() => { setShowIncomeModal(false); setEditingIncomeId(null); }}
-              />
-            </Modal>
           </>
         );
       }
@@ -673,23 +683,6 @@ function Dashboard() {
         const isCurrentYear = storageService.isCurrentTaxYear(selectedTaxYear);
         const expensesInTaxYear = storageService.getExpensesInTaxYear(expenseRecords, taxRef);
 
-        const handleSaveExpense = (formData) => {
-          try {
-            if (editingExpenseId) {
-              storeUpdateExpense(editingExpenseId, formData);
-              setSuccessMessage('Expense record updated successfully');
-            } else {
-              storeAddExpense(formData);
-              setSuccessMessage('Expense record added successfully');
-            }
-            setShowExpenseModal(false);
-            setEditingExpenseId(null);
-            setTimeout(() => setSuccessMessage(null), 3000);
-          } catch (error) {
-            console.error('Error saving expense record:', error);
-          }
-        };
-
         const handleEditExpense = (id) => {
           setEditingExpenseId(id);
           setShowExpenseModal(true);
@@ -699,7 +692,6 @@ function Dashboard() {
           setConfirmDialog({ isOpen: true, type: 'expense', id });
         };
 
-        const editingRecord = editingExpenseId ? storageService.getExpenseRecord(editingExpenseId) : null;
         const sortedRecords = [...expensesInTaxYear].sort((a, b) => storageService.parseLocalDate(b.date) - storageService.parseLocalDate(a.date));
 
         return (
@@ -845,18 +837,6 @@ function Dashboard() {
                 )}
               </>
             )}
-
-            <Modal
-              isOpen={showExpenseModal}
-              onClose={() => { setShowExpenseModal(false); setEditingExpenseId(null); }}
-              title={editingExpenseId ? 'Edit Expense' : 'Add Expense'}
-            >
-              <ExpenseForm
-                initialData={editingRecord}
-                onSubmit={handleSaveExpense}
-                onCancel={() => { setShowExpenseModal(false); setEditingExpenseId(null); }}
-              />
-            </Modal>
           </>
         );
       }
@@ -1083,10 +1063,13 @@ function Dashboard() {
 
       {/* Main content */}
       <main style={{ flex: 1, minWidth: 0, overflowY: "auto", backgroundColor: TOKENS.colors.neutral[50], paddingBottom: isMobile ? "72px" : 0 }}>
+        {/* Persistent, prominent browser-storage notice (all views) */}
+        <StorageNoticeBanner />
         <div style={{ width: "100%", maxWidth: "1440px", margin: "0 auto", padding: isMobile ? "20px 16px" : "32px 36px", boxSizing: "border-box" }}>
           {/* Global toolbar (visible across all views) */}
-          <div className="mb-6 flex items-center justify-end gap-3">
+          <div className="mb-6 flex flex-wrap items-center justify-end gap-3">
             <TaxYearSelector />
+            <AddTransactionButton onAddIncome={openAddIncome} onAddExpense={openAddExpense} />
           </div>
           {storageError && (
             <div style={{ marginBottom: "24px" }}>
@@ -1158,6 +1141,30 @@ function Dashboard() {
           ✓ {successMessage}
         </div>
       )}
+
+      {/* Transaction modals (App-level so the global add action works everywhere) */}
+      <Modal
+        isOpen={showIncomeModal}
+        onClose={() => { setShowIncomeModal(false); setEditingIncomeId(null); }}
+        title={editingIncomeId ? 'Edit Income' : 'Add Income'}
+      >
+        <IncomeForm
+          initialData={editingIncomeRecord}
+          onSubmit={handleSaveIncome}
+          onCancel={() => { setShowIncomeModal(false); setEditingIncomeId(null); }}
+        />
+      </Modal>
+      <Modal
+        isOpen={showExpenseModal}
+        onClose={() => { setShowExpenseModal(false); setEditingExpenseId(null); }}
+        title={editingExpenseId ? 'Edit Expense' : 'Add Expense'}
+      >
+        <ExpenseForm
+          initialData={editingExpenseRecord}
+          onSubmit={handleSaveExpense}
+          onCancel={() => { setShowExpenseModal(false); setEditingExpenseId(null); }}
+        />
+      </Modal>
 
       {/* Confirmation Dialog */}
       <ConfirmDialog
