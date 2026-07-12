@@ -1,7 +1,7 @@
 import { TOKENS } from "./tokens";
 
 // Button component - reusable design system component
-export const Button = ({ variant = "primary", disabled = false, children, onClick }) => {
+export const Button = ({ variant = "primary", disabled = false, children, onClick, type = "button" }) => {
   const baseStyles = {
     padding: "12px 24px",
     borderRadius: "8px",
@@ -36,6 +36,7 @@ export const Button = ({ variant = "primary", disabled = false, children, onClic
 
   return (
     <button
+      type={type}
       style={{ ...baseStyles, ...variantStyles[variant] }}
       disabled={disabled}
       onClick={onClick}
@@ -90,7 +91,7 @@ export const Badge = ({ variant = "default", children }) => {
 };
 
 // Alert component
-export const Alert = ({ variant = "warning", title, children }) => {
+export const Alert = ({ variant = "warning", title, description, children }) => {
   const styles = {
     warning: {
       bg: "#FFFBEB",
@@ -118,8 +119,8 @@ export const Alert = ({ variant = "warning", title, children }) => {
         color: styles[variant].color,
       }}
     >
-      <div style={{ fontWeight: "600", marginBottom: "4px" }}>{title}</div>
-      <div style={{ fontSize: "14px" }}>{children}</div>
+      {title && <div style={{ fontWeight: "600", marginBottom: "4px" }}>{title}</div>}
+      <div style={{ fontSize: "14px" }}>{description || children}</div>
     </div>
   );
 };
