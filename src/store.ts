@@ -10,6 +10,14 @@ export const taxYearStartToLabel = (startYear: number): string =>
 export const currentTaxYearStart = (): number =>
   storageService.getTaxYearStart().getFullYear();
 
+// The tax years offered in the selector: the current year and the two prior
+// (e.g. today in 2026/27 -> [2026, 2025, 2024] = 2026/27, 2025/26, 2024/25).
+export const getAvailableTaxYears = (current: number = currentTaxYearStart()): number[] => [
+  current,
+  current - 1,
+  current - 2,
+];
+
 // A reference Date that resolves to the given tax year for storageService calcs.
 // For the CURRENT tax year we use "now" so completed-month / this-month figures
 // reflect today; for past years we use a date inside that year.

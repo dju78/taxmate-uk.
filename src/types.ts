@@ -55,9 +55,14 @@ export interface ExpenseCalcRecord {
   category?: string;
 }
 
+export interface ExportPreferences {
+  selectedTaxYear?: number;
+}
+
 export interface ExportBundle {
   schemaVersion: number;
   exportedAt: string;
+  preferences?: ExportPreferences;
   income: IncomeRecord[];
   expenses: ExpenseRecord[];
 }

@@ -1,6 +1,6 @@
 // Storage service - abstraction layer for income and expense data persistence
 // Currently uses localStorage; can be replaced with backend API
-import type { IncomeRecord, ExpenseRecord, ExportBundle, IncomeCalcRecord, ExpenseCalcRecord } from './types';
+import type { IncomeRecord, ExpenseRecord, ExportBundle, ExportPreferences, IncomeCalcRecord, ExpenseCalcRecord } from './types';
 
 const INCOME_STORAGE_KEY = 'taxmate_income_records';
 const EXPENSE_STORAGE_KEY = 'taxmate_expense_records';
@@ -113,17 +113,19 @@ export const storageService = {
   // Export / backup
   // ---------------------------------------------------------------------------
 
-  getExportBundle: (): ExportBundle => ({
+  getExportBundle: (preferences?: ExportPreferences): ExportBundle => ({
     schemaVersion: SCHEMA_VERSION,
     exportedAt: new Date().toISOString(),
+    preferences,
     income: storageService.getIncomeRecords(),
     expenses: storageService.getExpenseRecords(),
   }),
 
-  recordsToCSV: (records: Record<string, unknown>[]): string => {
+  recordsToCSV: <T extends object>(records: readonly T[]): string => {
     if (!records || records.length === 0) return '';
+    const rows = records as readonly Record<string, unknown>[];
     const keys = Array.from(
-      records.reduce((set: Set<string>, r) => {
+      rows.reduce((set: Set<string>, r) => {
         Object.keys(r).forEach((k) => set.add(k));
         return set;
       }, new Set<string>())
@@ -133,7 +135,7 @@ export const storageService = {
       return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
     };
     const header = keys.join(',');
-    const lines = records.map((r) => keys.map((k) => escape(r[k])).join(','));
+    const lines = rows.map((r) => keys.map((k) => escape(r[k])).join(','));
     return [header, ...lines].join('\n');
   },
 
@@ -224,6 +226,83 @@ export const storageService = {
   getFirstAverageAvailableDate: (referenceDate: Date = new Date()): Date => {
     const start = storageService.getTaxYearStart(referenceDate);
     return new Date(start.getFullYear(), start.getMonth() + 1, start.getDate());
+  },
+
+  // ---------------------------------------------------------------------------
+  // Selected-tax-year helpers (a tax year is identified by its START year)
+  // ---------------------------------------------------------------------------
+
+  // A DETERMINISTIC reference date (6 April of the start year) that selects the
+  // given tax year regardless of "today". Pass this into the window-based
+  // calculators (totals, tables, charts, breakdowns) so a chosen year controls
+  // them instead of the current date.
+  getTaxYearStartForYear: (startYear: number): Date =>
+    new Date(startYear, TAX_YEAR_START_MONTH, TAX_YEAR_START_DAY),
+
+  // Start year of the tax year containing `today`.
+  getCurrentTaxYearStartYear: (today: Date = new Date()): number =>
+    storageService.getTaxYearStart(today).getFullYear(),
+
+  // Whether the given start year is the current tax year.
+  isCurrentTaxYear: (startYear: number, today: Date = new Date()): boolean =>
+    startYear === storageService.getCurrentTaxYearStartYear(today),
+
+  // Completed tax months for a selected year: a past year is fully complete
+  // (12); a future year is 0; the current year counts completed months to today.
+  getCompletedTaxMonthsForYear: (startYear: number, today: Date = new Date()): number => {
+    const current = storageService.getCurrentTaxYearStartYear(today);
+    if (startYear < current) return 12;
+    if (startYear > current) return 0;
+    return storageService.getCompletedTaxMonths(today);
+  },
+
+  // Exclusive upper bound of the completed-tax-month window for a selected year.
+  // Past year -> whole year (next tax year start); current year -> current tax
+  // month start; future -> the year start (empty window).
+  getAverageWindowEndForYear: (startYear: number, today: Date = new Date()): Date => {
+    const current = storageService.getCurrentTaxYearStartYear(today);
+    if (startYear < current) return new Date(startYear + 1, TAX_YEAR_START_MONTH, TAX_YEAR_START_DAY);
+    if (startYear > current) return storageService.getTaxYearStartForYear(startYear);
+    return storageService.getCurrentTaxMonthStart(today);
+  },
+
+  // Average RECEIVED income per completed tax month for a selected year.
+  calculateAverageMonthlyIncomeForYear: (
+    startYear: number,
+    records?: IncomeCalcRecord[],
+    today: Date = new Date()
+  ): number | null => {
+    const months = storageService.getCompletedTaxMonthsForYear(startYear, today);
+    if (months < 1) return null;
+    const start = storageService.getTaxYearStartForYear(startYear);
+    const end = storageService.getAverageWindowEndForYear(startYear, today);
+    const received = storageService.sumIncomeInWindow(INCOME_STATUS.RECEIVED, start, end, records);
+    return storageService.roundCurrency(received / months);
+  },
+
+  // Average RECORDED expenses per completed tax month for a selected year.
+  calculateAverageMonthlyExpensesForYear: (
+    startYear: number,
+    records?: ExpenseCalcRecord[],
+    today: Date = new Date()
+  ): number | null => {
+    const months = storageService.getCompletedTaxMonthsForYear(startYear, today);
+    if (months < 1) return null;
+    const start = storageService.getTaxYearStartForYear(startYear);
+    const end = storageService.getAverageWindowEndForYear(startYear, today);
+    const total = storageService.sumExpensesInWindow(start, end, records);
+    return storageService.roundCurrency(total / months);
+  },
+
+  // Received income in the current calendar month, but ONLY for the current tax
+  // year (returns null for past/future years, where "this month" is undefined).
+  calculateIncomeThisMonthForYear: (
+    startYear: number,
+    records?: IncomeCalcRecord[],
+    today: Date = new Date()
+  ): number | null => {
+    if (!storageService.isCurrentTaxYear(startYear, today)) return null;
+    return storageService.calculateIncomeThisMonth(today, records);
   },
 
   // ---------------------------------------------------------------------------

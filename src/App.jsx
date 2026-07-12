@@ -5,6 +5,8 @@ import { IncomeForm } from "./IncomeForm";
 import { ExpenseForm } from "./ExpenseForm";
 import { storageService, INCOME_STATUS, INCOME_STATUS_LABELS } from "./storage";
 import { useBreakpoint, useDialog } from "./hooks";
+import { useTaxStore, taxYearStartToLabel } from "./store";
+import { TaxYearSelector } from "./TaxYearSelector";
 
 // SVG Icons
 const Icons = {
@@ -225,15 +227,29 @@ function Dashboard() {
   const [activeNav, setActiveNav] = useState("dashboard");
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [monthlyReportsEnabled, setMonthlyReportsEnabled] = useState(true);
-  const [incomeRecords, setIncomeRecords] = useState(() => storageService.getIncomeRecords());
   const [showIncomeModal, setShowIncomeModal] = useState(false);
   const [editingIncomeId, setEditingIncomeId] = useState(null);
-  const [expenseRecords, setExpenseRecords] = useState(() => storageService.getExpenseRecords());
   const [showExpenseModal, setShowExpenseModal] = useState(false);
   const [editingExpenseId, setEditingExpenseId] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, type: null, id: null });
   const [successMessage, setSuccessMessage] = useState(null);
   const [storageError] = useState(() => storageService.getStorageError());
+
+  // Records + selected tax year live in the Zustand store (single source of truth).
+  const incomeRecords = useTaxStore((s) => s.income);
+  const expenseRecords = useTaxStore((s) => s.expenses);
+  const selectedTaxYear = useTaxStore((s) => s.selectedTaxYear);
+  const storeAddIncome = useTaxStore((s) => s.addIncome);
+  const storeUpdateIncome = useTaxStore((s) => s.updateIncome);
+  const storeDeleteIncome = useTaxStore((s) => s.deleteIncome);
+  const storeAddExpense = useTaxStore((s) => s.addExpense);
+  const storeUpdateExpense = useTaxStore((s) => s.updateExpense);
+  const storeDeleteExpense = useTaxStore((s) => s.deleteExpense);
+
+  // Deterministic reference date that selects the chosen tax year for all
+  // window-based calculations (totals, tables, charts, breakdowns, counts).
+  const taxRef = storageService.getTaxYearStartForYear(selectedTaxYear);
+  const selectedTaxYearLabel = taxYearStartToLabel(selectedTaxYear);
 
   useEffect(() => {
     storageService.migrateIfNeeded();
@@ -253,14 +269,18 @@ function Dashboard() {
   };
 
   const stamp = () => new Date().toISOString().slice(0, 10);
+  // JSON is a COMPLETE backup (all years) plus the saved tax-year preference.
   const handleExportJSON = () => {
-    downloadFile(`taxmate-backup-${stamp()}.json`, JSON.stringify(storageService.getExportBundle(), null, 2), 'application/json');
+    const bundle = storageService.getExportBundle({ selectedTaxYear });
+    downloadFile(`taxmate-backup-${stamp()}.json`, JSON.stringify(bundle, null, 2), 'application/json');
   };
+  // CSV export is SCOPED to the selected tax year (ledger export).
   const handleExportCSV = () => {
-    const income = storageService.recordsToCSV(storageService.getIncomeRecords());
-    const expenses = storageService.recordsToCSV(storageService.getExpenseRecords());
-    downloadFile(`taxmate-income-${stamp()}.csv`, income || 'No income records', 'text/csv');
-    downloadFile(`taxmate-expenses-${stamp()}.csv`, expenses || 'No expense records', 'text/csv');
+    const yearTag = selectedTaxYearLabel.replace('/', '-');
+    const income = storageService.recordsToCSV(storageService.getIncomeInTaxYear(incomeRecords, taxRef));
+    const expenses = storageService.recordsToCSV(storageService.getExpensesInTaxYear(expenseRecords, taxRef));
+    downloadFile(`taxmate-income-${yearTag}-${stamp()}.csv`, income || 'No income records', 'text/csv');
+    downloadFile(`taxmate-expenses-${yearTag}-${stamp()}.csv`, expenses || 'No expense records', 'text/csv');
   };
 
   const { isMobile, isTablet } = useBreakpoint();
@@ -284,16 +304,15 @@ function Dashboard() {
           .toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })
           .toUpperCase();
         const greeting = now.getHours() < 12 ? "Good morning" : now.getHours() < 18 ? "Good afternoon" : "Good evening";
-        const taxYearStart = storageService.getTaxYearStart();
-        const taxYearLabel = `${taxYearStart.getFullYear()}/${String((taxYearStart.getFullYear() + 1) % 100).padStart(2, "0")}`;
+        const taxYearLabel = selectedTaxYearLabel;
 
-        const incomeReceivedYTD = storageService.calculateTotalReceived();
-        const expensesYTD = storageService.calculateTotalExpensesYTD();
+        const incomeReceivedYTD = storageService.calculateTotalReceived(taxRef, incomeRecords);
+        const expensesYTD = storageService.calculateTotalExpensesYTD(taxRef, expenseRecords);
         const netProfitYTD = storageService.roundCurrency(incomeReceivedYTD - expensesYTD);
-        const receiptsCount = storageService.getExpensesInTaxYear(expenseRecords).length;
+        const receiptsCount = storageService.getExpensesInTaxYear(expenseRecords, taxRef).length;
 
-        const dashIncomeByMonth = storageService.getIncomeByMonth();
-        const dashExpensesByMonth = storageService.getExpensesByMonth();
+        const dashIncomeByMonth = storageService.getIncomeByMonth(incomeRecords, taxRef);
+        const dashExpensesByMonth = storageService.getExpensesByMonth(expenseRecords, taxRef);
         const monthKeys = Array.from(
           new Set([...Object.keys(dashIncomeByMonth), ...Object.keys(dashExpensesByMonth)])
         ).sort();
@@ -376,20 +395,20 @@ function Dashboard() {
 
               <div style={{ backgroundColor: "white", border: `1px solid ${TOKENS.colors.neutral[200]}`, borderRadius: "14px", padding: "24px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
                 <h3 style={{ fontSize: "18px", fontWeight: "700", marginBottom: "16px", fontFamily: "Manrope, sans-serif" }}>
-                  This tax year
+                  Tax year {taxYearLabel}
                 </h3>
                 <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between" }}>
                     <span style={{ fontSize: "13px", color: TOKENS.colors.neutral[600] }}>Outstanding</span>
-                    <span style={{ fontSize: "13px", fontWeight: "700", color: TOKENS.colors.semantic.warning }}>£{storageService.calculateOutstanding().toFixed(2)}</span>
+                    <span style={{ fontSize: "13px", fontWeight: "700", color: TOKENS.colors.semantic.warning }}>£{storageService.calculateOutstanding(taxRef, incomeRecords).toFixed(2)}</span>
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between" }}>
                     <span style={{ fontSize: "13px", color: TOKENS.colors.neutral[600] }}>Overdue</span>
-                    <span style={{ fontSize: "13px", fontWeight: "700", color: TOKENS.colors.semantic.danger }}>£{storageService.calculateOverdue().toFixed(2)}</span>
+                    <span style={{ fontSize: "13px", fontWeight: "700", color: TOKENS.colors.semantic.danger }}>£{storageService.calculateOverdue(taxRef, incomeRecords).toFixed(2)}</span>
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between", borderTop: `1px solid ${TOKENS.colors.neutral[200]}`, paddingTop: "12px" }}>
                     <span style={{ fontSize: "13px", color: TOKENS.colors.neutral[600] }}>Invoiced total</span>
-                    <span style={{ fontSize: "13px", fontWeight: "700", color: TOKENS.colors.neutral[900] }}>£{storageService.calculateTotalInvoiced().toFixed(2)}</span>
+                    <span style={{ fontSize: "13px", fontWeight: "700", color: TOKENS.colors.neutral[900] }}>£{storageService.calculateTotalInvoiced(taxRef, incomeRecords).toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -399,34 +418,33 @@ function Dashboard() {
       }
 
       case "income": {
-        const totalReceived = storageService.calculateTotalReceived();
-        const totalInvoiced = storageService.calculateTotalInvoiced();
-        const outstanding = storageService.calculateOutstanding();
-        const overdue = storageService.calculateOverdue();
-        const thisMonth = storageService.calculateIncomeThisMonth();
-        const avgMonthly = storageService.calculateAverageMonthlyIncome();
-        const completedTaxMonths = storageService.getCompletedTaxMonths();
+        const totalReceived = storageService.calculateTotalReceived(taxRef, incomeRecords);
+        const totalInvoiced = storageService.calculateTotalInvoiced(taxRef, incomeRecords);
+        const outstanding = storageService.calculateOutstanding(taxRef, incomeRecords);
+        const overdue = storageService.calculateOverdue(taxRef, incomeRecords);
+        const thisMonth = storageService.calculateIncomeThisMonthForYear(selectedTaxYear, incomeRecords);
+        const avgMonthly = storageService.calculateAverageMonthlyIncomeForYear(selectedTaxYear, incomeRecords);
+        const completedTaxMonths = storageService.getCompletedTaxMonthsForYear(selectedTaxYear);
         const avgAvailableFrom = storageService.getFirstAverageAvailableDate().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
-        const incomeTaxYearStart = storageService.getTaxYearStart();
-        const incomeTaxYearLabel = `${incomeTaxYearStart.getFullYear()}/${String((incomeTaxYearStart.getFullYear() + 1) % 100).padStart(2, "0")}`;
-        const inTaxYear = storageService.getIncomeInTaxYear(incomeRecords);
+        const incomeTaxYearLabel = selectedTaxYearLabel;
+        const inTaxYear = storageService.getIncomeInTaxYear(incomeRecords, taxRef);
         const statusOf = (r) => storageService.normaliseIncomeStatus(r.status);
         const receivedCount = inTaxYear.filter(r => statusOf(r) === INCOME_STATUS.RECEIVED).length;
         const pendingCount = inTaxYear.filter(r => statusOf(r) === INCOME_STATUS.PENDING).length;
         const overdueCount = inTaxYear.filter(r => statusOf(r) === INCOME_STATUS.OVERDUE).length;
-        const incomeByMonth = storageService.getIncomeByMonth();
-        const incomeBySource = storageService.getIncomeBySource();
+        const incomeByMonth = storageService.getIncomeByMonth(incomeRecords, taxRef);
+        const incomeBySource = storageService.getIncomeBySource(incomeRecords, taxRef);
+        const isCurrentYear = storageService.isCurrentTaxYear(selectedTaxYear);
 
         const handleSaveIncome = (formData) => {
           try {
             if (editingIncomeId) {
-              storageService.updateIncomeRecord(editingIncomeId, formData);
+              storeUpdateIncome(editingIncomeId, formData);
               setSuccessMessage('Income record updated successfully');
             } else {
-              storageService.addIncomeRecord(formData);
+              storeAddIncome(formData);
               setSuccessMessage('Income record added successfully');
             }
-            setIncomeRecords(storageService.getIncomeRecords());
             setShowIncomeModal(false);
             setEditingIncomeId(null);
             setTimeout(() => setSuccessMessage(null), 3000);
@@ -465,7 +483,7 @@ function Dashboard() {
                 <h1 style={{ fontSize: pageHeadingSize, fontWeight: "800", color: TOKENS.colors.neutral[900], fontFamily: "Manrope, sans-serif" }}>
                   Income
                 </h1>
-                <p style={{ color: TOKENS.colors.neutral[600], marginTop: "8px" }}>Track and manage your income sources</p>
+                <p style={{ color: TOKENS.colors.neutral[600], marginTop: "8px" }}>Track and manage your income sources · Tax year {incomeTaxYearLabel}</p>
               </div>
               <Button variant="primary" onClick={() => { setEditingIncomeId(null); setShowIncomeModal(true); }}>
                 + Add income
@@ -474,14 +492,14 @@ function Dashboard() {
 
             <div style={{ display: "grid", gridTemplateColumns: kpiCols, gap: "16px", marginBottom: "16px" }}>
               <div style={{ backgroundColor: "white", border: `1px solid ${TOKENS.colors.neutral[200]}`, borderRadius: "14px", padding: "20px" }}>
-                <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[500] }}>Total received YTD</div>
+                <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[500] }}>Total received</div>
                 <div style={{ fontSize: "30px", fontWeight: "800", color: TOKENS.colors.neutral[900], marginTop: "8px", fontFamily: "Manrope, sans-serif" }}>
                   £{totalReceived.toFixed(2)}
                 </div>
                 <div style={{ fontSize: "13px", color: TOKENS.colors.neutral[600], marginTop: "8px" }}>{receivedCount} payment{receivedCount === 1 ? '' : 's'} received</div>
               </div>
               <div style={{ backgroundColor: "white", border: `1px solid ${TOKENS.colors.neutral[200]}`, borderRadius: "14px", padding: "20px" }}>
-                <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[500] }}>Total invoiced YTD</div>
+                <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[500] }}>Total invoiced</div>
                 <div style={{ fontSize: "30px", fontWeight: "800", color: TOKENS.colors.neutral[900], marginTop: "8px", fontFamily: "Manrope, sans-serif" }}>
                   £{totalInvoiced.toFixed(2)}
                 </div>
@@ -523,11 +541,11 @@ function Dashboard() {
                 <div style={{ fontSize: "13px", color: TOKENS.colors.neutral[600], marginTop: "8px" }}>{overdueCount} overdue invoice{overdueCount === 1 ? '' : 's'}</div>
               </div>
               <div style={{ backgroundColor: "white", border: `1px solid ${TOKENS.colors.neutral[200]}`, borderRadius: "14px", padding: "20px" }}>
-                <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[500] }}>Received this month</div>
+                <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[500] }}>{isCurrentYear ? "Received this month" : "Tax year"}</div>
                 <div style={{ fontSize: "24px", fontWeight: "800", color: TOKENS.colors.neutral[900], marginTop: "8px", fontFamily: "Manrope, sans-serif" }}>
-                  £{thisMonth.toFixed(2)}
+                  {isCurrentYear ? `£${(thisMonth ?? 0).toFixed(2)}` : incomeTaxYearLabel}
                 </div>
-                <div style={{ fontSize: "13px", color: TOKENS.colors.neutral[600], marginTop: "8px" }}>Current calendar month</div>
+                <div style={{ fontSize: "13px", color: TOKENS.colors.neutral[600], marginTop: "8px" }}>{isCurrentYear ? "Current calendar month" : "Complete tax year"}</div>
               </div>
             </div>
 
@@ -642,27 +660,28 @@ function Dashboard() {
       }
 
       case "expenses": {
-        const totalYTD = storageService.calculateTotalExpensesYTD();
-        const thisMonth = storageService.calculateExpensesThisMonth();
-        const avgMonthly = storageService.calculateAverageMonthlyExpenses();
-        const completedTaxMonths = storageService.getCompletedTaxMonths();
+        const totalYTD = storageService.calculateTotalExpensesYTD(taxRef, expenseRecords);
+        const thisMonth = storageService.isCurrentTaxYear(selectedTaxYear)
+          ? storageService.calculateExpensesThisMonth(new Date(), expenseRecords)
+          : null;
+        const avgMonthly = storageService.calculateAverageMonthlyExpensesForYear(selectedTaxYear, expenseRecords);
+        const completedTaxMonths = storageService.getCompletedTaxMonthsForYear(selectedTaxYear);
         const avgAvailableFrom = storageService.getFirstAverageAvailableDate().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
-        const expensesByMonth = storageService.getExpensesByMonth();
-        const expensesByCategory = storageService.getExpensesByCategory();
-        const expenseTaxYearStart = storageService.getTaxYearStart();
-        const expenseTaxYearLabel = `${expenseTaxYearStart.getFullYear()}/${String((expenseTaxYearStart.getFullYear() + 1) % 100).padStart(2, "0")}`;
-        const expensesInTaxYear = storageService.getExpensesInTaxYear(expenseRecords);
+        const expensesByMonth = storageService.getExpensesByMonth(expenseRecords, taxRef);
+        const expensesByCategory = storageService.getExpensesByCategory(expenseRecords, taxRef);
+        const expenseTaxYearLabel = selectedTaxYearLabel;
+        const isCurrentYear = storageService.isCurrentTaxYear(selectedTaxYear);
+        const expensesInTaxYear = storageService.getExpensesInTaxYear(expenseRecords, taxRef);
 
         const handleSaveExpense = (formData) => {
           try {
             if (editingExpenseId) {
-              storageService.updateExpenseRecord(editingExpenseId, formData);
+              storeUpdateExpense(editingExpenseId, formData);
               setSuccessMessage('Expense record updated successfully');
             } else {
-              storageService.addExpenseRecord(formData);
+              storeAddExpense(formData);
               setSuccessMessage('Expense record added successfully');
             }
-            setExpenseRecords(storageService.getExpenseRecords());
             setShowExpenseModal(false);
             setEditingExpenseId(null);
             setTimeout(() => setSuccessMessage(null), 3000);
@@ -690,7 +709,7 @@ function Dashboard() {
                 <h1 style={{ fontSize: pageHeadingSize, fontWeight: "800", color: TOKENS.colors.neutral[900], fontFamily: "Manrope, sans-serif" }}>
                   Expenses
                 </h1>
-                <p style={{ color: TOKENS.colors.neutral[600], marginTop: "8px" }}>Log and categorize your business expenses</p>
+                <p style={{ color: TOKENS.colors.neutral[600], marginTop: "8px" }}>Log and categorize your business expenses · Tax year {expenseTaxYearLabel}</p>
               </div>
               <Button variant="primary" onClick={() => { setEditingExpenseId(null); setShowExpenseModal(true); }}>
                 + Add expense
@@ -699,18 +718,18 @@ function Dashboard() {
 
             <div style={{ display: "grid", gridTemplateColumns: kpiCols, gap: "16px", marginBottom: "24px" }}>
               <div style={{ backgroundColor: "white", border: `1px solid ${TOKENS.colors.neutral[200]}`, borderRadius: "14px", padding: "20px" }}>
-                <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[500] }}>Total expenses YTD</div>
+                <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[500] }}>Total expenses</div>
                 <div style={{ fontSize: "30px", fontWeight: "800", color: TOKENS.colors.neutral[900], marginTop: "8px", fontFamily: "Manrope, sans-serif" }}>
                   £{totalYTD.toFixed(2)}
                 </div>
                 <div style={{ fontSize: "13px", color: TOKENS.colors.neutral[600], marginTop: "8px" }}>{expensesInTaxYear.length} receipt{expensesInTaxYear.length === 1 ? '' : 's'} logged</div>
               </div>
               <div style={{ backgroundColor: "white", border: `1px solid ${TOKENS.colors.neutral[200]}`, borderRadius: "14px", padding: "20px" }}>
-                <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[500] }}>This month</div>
+                <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[500] }}>{isCurrentYear ? "This month" : "Tax year"}</div>
                 <div style={{ fontSize: "30px", fontWeight: "800", color: TOKENS.colors.neutral[900], marginTop: "8px", fontFamily: "Manrope, sans-serif" }}>
-                  £{thisMonth.toFixed(2)}
+                  {isCurrentYear ? `£${(thisMonth ?? 0).toFixed(2)}` : expenseTaxYearLabel}
                 </div>
-                <div style={{ fontSize: "13px", color: TOKENS.colors.neutral[600], marginTop: "8px" }}>expenses this month</div>
+                <div style={{ fontSize: "13px", color: TOKENS.colors.neutral[600], marginTop: "8px" }}>{isCurrentYear ? "expenses this month" : "Complete tax year"}</div>
               </div>
               <div style={{ backgroundColor: "white", border: `1px solid ${TOKENS.colors.neutral[200]}`, borderRadius: "14px", padding: "20px" }}>
                 <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[500] }}>Average per completed tax month</div>
@@ -843,10 +862,9 @@ function Dashboard() {
       }
 
       case "tax": {
-        const taxYearStart = storageService.getTaxYearStart();
-        const taxYearLabel = `${taxYearStart.getFullYear()}/${String((taxYearStart.getFullYear() + 1) % 100).padStart(2, "0")}`;
-        const receivedYTD = storageService.calculateTotalReceived();
-        const expensesYTD = storageService.calculateTotalExpensesYTD();
+        const taxYearLabel = selectedTaxYearLabel;
+        const receivedYTD = storageService.calculateTotalReceived(taxRef, incomeRecords);
+        const expensesYTD = storageService.calculateTotalExpensesYTD(taxRef, expenseRecords);
         const netProfitYTD = storageService.roundCurrency(receivedYTD - expensesYTD);
 
         return (
@@ -1066,6 +1084,10 @@ function Dashboard() {
       {/* Main content */}
       <main style={{ flex: 1, minWidth: 0, overflowY: "auto", backgroundColor: TOKENS.colors.neutral[50], paddingBottom: isMobile ? "72px" : 0 }}>
         <div style={{ width: "100%", maxWidth: "1440px", margin: "0 auto", padding: isMobile ? "20px 16px" : "32px 36px", boxSizing: "border-box" }}>
+          {/* Global toolbar (visible across all views) */}
+          <div className="mb-6 flex items-center justify-end gap-3">
+            <TaxYearSelector />
+          </div>
           {storageError && (
             <div style={{ marginBottom: "24px" }}>
               <Alert variant="error" title="Storage problem detected" description={`${storageError} Use Settings → Data & backup to export what remains.`} />
@@ -1147,12 +1169,10 @@ function Dashboard() {
         onConfirm={() => {
           try {
             if (confirmDialog.type === 'income') {
-              storageService.deleteIncomeRecord(confirmDialog.id);
-              setIncomeRecords(storageService.getIncomeRecords());
+              storeDeleteIncome(confirmDialog.id);
               setSuccessMessage('Income record deleted successfully');
             } else if (confirmDialog.type === 'expense') {
-              storageService.deleteExpenseRecord(confirmDialog.id);
-              setExpenseRecords(storageService.getExpenseRecords());
+              storeDeleteExpense(confirmDialog.id);
               setSuccessMessage('Expense record deleted successfully');
             }
             setTimeout(() => setSuccessMessage(null), 3000);

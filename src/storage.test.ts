@@ -435,3 +435,99 @@ describe('charts are restricted to the active tax year', () => {
     expect(storageService.getExpensesByCategory(expenseRecords, ref)).toEqual({ Supplies: 200 });
   });
 });
+
+describe('Phase 2: selected tax year controls calculations', () => {
+  const ref = (year: number) => storageService.getTaxYearStartForYear(year);
+  const income = [
+    { id: 'a', date: '2024-06-01', amount: '1000', status: 'received', source: 'Alpha' }, // 2024/25
+    { id: 'b', date: '2025-06-01', amount: '2000', status: 'received', source: 'Beta' },  // 2025/26
+    { id: 'c', date: '2026-06-01', amount: '3000', status: 'received', source: 'Gamma' }, // 2026/27
+    { id: 'd', date: '2026-06-15', amount: '500', status: 'pending', source: 'Gamma' },   // 2026/27
+    { id: 'e', date: '2026-06-20', amount: '300', status: 'overdue', source: 'Gamma' },   // 2026/27
+  ];
+  const expenses = [
+    { id: 'x', date: '2024-06-01', amount: '100', category: 'Office costs' }, // 2024/25
+    { id: 'y', date: '2026-06-01', amount: '200', category: 'Travel' },       // 2026/27
+  ];
+
+  it('default tax-year detection: 5 April belongs to the previous start year', () => {
+    expect(storageService.getCurrentTaxYearStartYear(new Date(2026, 3, 5))).toBe(2025);
+  });
+
+  it('default tax-year detection: 6 April opens the new tax year', () => {
+    expect(storageService.getCurrentTaxYearStartYear(new Date(2026, 3, 6))).toBe(2026);
+  });
+
+  it('total received is scoped to the selected year (2024/25, 2025/26, 2026/27)', () => {
+    expect(storageService.calculateTotalReceived(ref(2024), income)).toBe(1000);
+    expect(storageService.calculateTotalReceived(ref(2025), income)).toBe(2000);
+    expect(storageService.calculateTotalReceived(ref(2026), income)).toBe(3000);
+  });
+
+  it('dashboard reconciliation holds within the selected year', () => {
+    // 2026/27: invoiced 3800 = received 3000 + outstanding 500 + overdue 300
+    expect(storageService.calculateTotalInvoiced(ref(2026), income)).toBe(3800);
+    expect(storageService.calculateOutstanding(ref(2026), income)).toBe(500);
+    expect(storageService.calculateOverdue(ref(2026), income)).toBe(300);
+    // 2025/26 has no pending/overdue
+    expect(storageService.calculateOutstanding(ref(2025), income)).toBe(0);
+    expect(storageService.calculateOverdue(ref(2025), income)).toBe(0);
+  });
+
+  it('income table filtering returns only the selected year', () => {
+    expect(storageService.getIncomeInTaxYear(income, ref(2025)).map((r) => r.id)).toEqual(['b']);
+    expect(storageService.getIncomeInTaxYear(income, ref(2026)).map((r) => r.id)).toEqual(['c', 'd', 'e']);
+  });
+
+  it('expense table filtering returns only the selected year', () => {
+    expect(storageService.getExpensesInTaxYear(expenses, ref(2024)).map((r) => r.id)).toEqual(['x']);
+    expect(storageService.getExpensesInTaxYear(expenses, ref(2026)).map((r) => r.id)).toEqual(['y']);
+  });
+
+  it('trend chart and source/category breakdowns are scoped to the selected year', () => {
+    expect(storageService.getIncomeByMonth(income, ref(2025))).toEqual({ '2025-06': 2000 });
+    expect(storageService.getIncomeBySource(income, ref(2024))).toEqual({ Alpha: 1000 });
+    expect(storageService.getExpensesByMonth(expenses, ref(2026))).toEqual({ '2026-06': 200 });
+    expect(storageService.getExpensesByCategory(expenses, ref(2026))).toEqual({ Travel: 200 });
+  });
+
+  it('CSV export scope follows the selected tax year', () => {
+    const csv2024 = storageService.recordsToCSV(storageService.getIncomeInTaxYear(income, ref(2024)));
+    expect(csv2024).toContain('Alpha');
+    expect(csv2024).not.toContain('Beta');
+    expect(csv2024).not.toContain('Gamma');
+  });
+
+  it('records dated 5 April and 6 April fall in the correct tax years', () => {
+    const boundary = [
+      { id: '5apr', date: '2026-04-05', amount: '10', status: 'received', source: 'S' },
+      { id: '6apr', date: '2026-04-06', amount: '20', status: 'received', source: 'S' },
+    ];
+    expect(storageService.getIncomeInTaxYear(boundary, ref(2025)).map((r) => r.id)).toEqual(['5apr']);
+    expect(storageService.getIncomeInTaxYear(boundary, ref(2026)).map((r) => r.id)).toEqual(['6apr']);
+  });
+
+  it('a past selected year is treated as fully complete (12 tax months)', () => {
+    const today = new Date(2026, 6, 12); // 12 July 2026
+    expect(storageService.getCompletedTaxMonthsForYear(2025, today)).toBe(12);
+    expect(storageService.getCompletedTaxMonthsForYear(2026, today)).toBe(3);
+    expect(storageService.getCompletedTaxMonthsForYear(2027, today)).toBe(0);
+  });
+
+  it('year-aware average uses 12 months for a complete past year', () => {
+    const today = new Date(2026, 6, 12);
+    // 2024/25 received 1000 over a complete year -> 1000 / 12
+    expect(storageService.calculateAverageMonthlyIncomeForYear(2024, income, today)).toBe(
+      storageService.roundCurrency(1000 / 12)
+    );
+    // current year 2026/27: received in completed months [6 Apr, 6 Jul) = 3000 / 3
+    expect(storageService.calculateAverageMonthlyIncomeForYear(2026, income, today)).toBe(1000);
+  });
+
+  it('this-month figure is only defined for the current tax year', () => {
+    const today = new Date(2026, 6, 12);
+    expect(storageService.calculateIncomeThisMonthForYear(2024, income, today)).toBeNull();
+    // no received income dated in July 2026 -> 0 for the current year
+    expect(storageService.calculateIncomeThisMonthForYear(2026, income, today)).toBe(0);
+  });
+});
