@@ -3,6 +3,7 @@ import type {
   ExpenseFilterState,
   IncomeStatusFilter,
 } from './filters';
+import type { IncomeSortOption, ExpenseSortOption } from './types';
 import { isIncomeFilterActive, isExpenseFilterActive, hasInvalidDateRange } from './filters';
 
 const selectCls =
@@ -25,15 +26,43 @@ interface IncomeFiltersProps {
   onReset: () => void;
   sources: string[];
   categories: string[];
+  search: string;
+  onSearchChange: (q: string) => void;
+  sort: IncomeSortOption;
+  onSortChange: (sort: IncomeSortOption) => void;
 }
 
-export function IncomeFilters({ filters, onChange, onReset, sources, categories }: IncomeFiltersProps) {
+export function IncomeFilters({ filters, onChange, onReset, sources, categories, search, onSearchChange, sort, onSortChange }: IncomeFiltersProps) {
   const rangeInvalid = hasInvalidDateRange(filters.dateFrom, filters.dateTo);
   const errId = 'income-date-error';
   const describedBy = rangeInvalid ? errId : undefined;
   return (
-    <div className="mb-4 flex flex-col gap-3">
-      {/* Segmented button group (not tabs, since they filter data rather than switch panels) */}
+    <div className="mb-4 flex flex-col gap-4">
+      <div className="flex flex-wrap gap-4 items-end">
+        <label className={labelCls + " flex-1 min-w-[200px]"}>
+          Search
+          <input
+            type="search"
+            placeholder="Search records..."
+            className={selectCls}
+            value={search}
+            onChange={(e) => onSearchChange(e.target.value)}
+          />
+        </label>
+        <label className={labelCls}>
+          Sort by
+          <select className={selectCls} value={sort} onChange={(e) => onSortChange(e.target.value as IncomeSortOption)}>
+            <option value="date-desc">Date (newest first)</option>
+            <option value="date-asc">Date (oldest first)</option>
+            <option value="amount-desc">Amount (highest first)</option>
+            <option value="amount-asc">Amount (lowest first)</option>
+            <option value="source-asc">Source (A-Z)</option>
+            <option value="source-desc">Source (Z-A)</option>
+            <option value="status-overdue">Status (overdue first)</option>
+          </select>
+        </label>
+      </div>
+
       <div role="group" aria-label="Filter by status" className="flex flex-wrap gap-1">
         {STATUS_OPTIONS.map((t) => {
           const active = filters.status === t.value;
@@ -116,14 +145,43 @@ interface ExpenseFiltersProps {
   onChange: (patch: Partial<ExpenseFilterState>) => void;
   onReset: () => void;
   categories: string[];
+  search: string;
+  onSearchChange: (q: string) => void;
+  sort: ExpenseSortOption;
+  onSortChange: (sort: ExpenseSortOption) => void;
 }
 
-export function ExpenseFilters({ filters, onChange, onReset, categories }: ExpenseFiltersProps) {
+export function ExpenseFilters({ filters, onChange, onReset, categories, search, onSearchChange, sort, onSortChange }: ExpenseFiltersProps) {
   const rangeInvalid = hasInvalidDateRange(filters.dateFrom, filters.dateTo);
   const errId = 'expense-date-error';
   const describedBy = rangeInvalid ? errId : undefined;
   return (
-    <div className="mb-4 flex flex-col gap-3">
+    <div className="mb-4 flex flex-col gap-4">
+      <div className="flex flex-wrap gap-4 items-end">
+        <label className={labelCls + " flex-1 min-w-[200px]"}>
+          Search
+          <input
+            type="search"
+            placeholder="Search records..."
+            className={selectCls}
+            value={search}
+            onChange={(e) => onSearchChange(e.target.value)}
+          />
+        </label>
+        <label className={labelCls}>
+          Sort by
+          <select className={selectCls} value={sort} onChange={(e) => onSortChange(e.target.value as ExpenseSortOption)}>
+            <option value="date-desc">Date (newest first)</option>
+            <option value="date-asc">Date (oldest first)</option>
+            <option value="amount-desc">Amount (highest first)</option>
+            <option value="amount-asc">Amount (lowest first)</option>
+            <option value="merchant-asc">Merchant (A-Z)</option>
+            <option value="merchant-desc">Merchant (Z-A)</option>
+            <option value="category-asc">Category (A-Z)</option>
+          </select>
+        </label>
+      </div>
+
       <div className="flex flex-wrap items-end gap-3">
         <label className={labelCls}>
           Category

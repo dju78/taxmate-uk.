@@ -14,6 +14,10 @@ describe('IncomeFilters component', () => {
     onReset: vi.fn(),
     sources: ['Alpha', 'Beta'],
     categories: ['Client work', 'Freelance'],
+    search: '',
+    onSearchChange: vi.fn(),
+    sort: 'date-desc' as any,
+    onSortChange: vi.fn(),
   };
 
   it('renders a labelled status group with segmented buttons (aria-pressed)', () => {
@@ -82,7 +86,7 @@ describe('ExpenseFilters component', () => {
   it('changing category calls onChange and invalid range shows an error', () => {
     const onChange = vi.fn();
     const { rerender } = render(
-      <ExpenseFilters filters={defaultExpenseFilters} onChange={onChange} onReset={vi.fn()} categories={['Travel', 'Supplies']} />
+      <ExpenseFilters filters={defaultExpenseFilters} onChange={onChange} onReset={vi.fn()} categories={['Travel', 'Supplies']} search="" onSearchChange={vi.fn()} sort="date-desc" onSortChange={vi.fn()} />
     );
     fireEvent.change(screen.getByLabelText('Category'), { target: { value: 'Travel' } });
     expect(onChange).toHaveBeenCalledWith({ category: 'Travel' });
@@ -93,6 +97,10 @@ describe('ExpenseFilters component', () => {
         onChange={onChange}
         onReset={vi.fn()}
         categories={['Travel']}
+        search=""
+        onSearchChange={vi.fn()}
+        sort="date-desc"
+        onSortChange={vi.fn()}
       />
     );
     expect(screen.getByRole('alert').textContent).toContain('Start date must be on or before the end date.');

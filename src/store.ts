@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { storageService, SELECTED_TAX_YEAR_KEY } from './storage';
-import type { IncomeRecord, ExpenseRecord, ExportPreferences } from './types';
+import type { IncomeRecord, ExpenseRecord, ExportPreferences, IncomeSortOption, ExpenseSortOption } from './types';
 import {
   defaultIncomeFilters,
   defaultExpenseFilters,
@@ -46,8 +46,16 @@ export interface TaxStore {
   income: IncomeRecord[];
   expenses: ExpenseRecord[];
   selectedTaxYear: number; // start year
+  incomeSort: IncomeSortOption;
+  expenseSort: ExpenseSortOption;
+  incomeSearch: string;
+  expenseSearch: string;
   refresh: () => void;
   setSelectedTaxYear: (year: number) => void;
+  setIncomeSort: (sort: IncomeSortOption) => void;
+  setExpenseSort: (sort: ExpenseSortOption) => void;
+  setIncomeSearch: (search: string) => void;
+  setExpenseSearch: (search: string) => void;
   addIncome: (record: Partial<IncomeRecord>) => void;
   updateIncome: (id: string, record: Partial<IncomeRecord>) => void;
   deleteIncome: (id: string) => void;
@@ -71,85 +79,97 @@ export interface TaxStore {
   ) => { income: number; expenses: number };
 }
 
-export const useTaxStore = create<TaxStore>((set, get) => ({
-  income: storageService.getIncomeRecords(),
-  expenses: storageService.getExpenseRecords(),
-  selectedTaxYear: loadSelectedYear(),
-  incomeFilters: defaultIncomeFilters,
-  expenseFilters: defaultExpenseFilters,
-  refresh: () =>
-    set({
-      income: storageService.getIncomeRecords(),
-      expenses: storageService.getExpenseRecords(),
-    }),
-  setSelectedTaxYear: (year) => {
-    try {
-      localStorage.setItem(SELECTED_TAX_YEAR_KEY, String(year));
-    } catch {
-      // ignore
-    }
-    // Reset ledger filters so a source/category from another year can't leave
-    // the ledger unexpectedly empty.
-    set({ selectedTaxYear: year, incomeFilters: defaultIncomeFilters, expenseFilters: defaultExpenseFilters });
-  },
-  setIncomeFilters: (patch) => set((s) => ({ incomeFilters: { ...s.incomeFilters, ...patch } })),
-  setExpenseFilters: (patch) => set((s) => ({ expenseFilters: { ...s.expenseFilters, ...patch } })),
-  resetIncomeFilters: () => set({ incomeFilters: defaultIncomeFilters }),
-  resetExpenseFilters: () => set({ expenseFilters: defaultExpenseFilters }),
-  addIncome: (record) => {
-    storageService.addIncomeRecord(record);
-    get().refresh();
-  },
-  updateIncome: (id, record) => {
-    storageService.updateIncomeRecord(id, record);
-    get().refresh();
-  },
-  deleteIncome: (id) => {
-    storageService.deleteIncomeRecord(id);
-    get().refresh();
-  },
-  addExpense: (record) => {
-    storageService.addExpenseRecord(record);
-    get().refresh();
-  },
-  updateExpense: (id, record) => {
-    storageService.updateExpenseRecord(id, record);
-    get().refresh();
-  },
-  deleteExpense: (id) => {
-    storageService.deleteExpenseRecord(id);
-    get().refresh();
-  },
-  loadDemo: () => {
-    // Demo records are dated in the SELECTED tax year so they appear in view.
-    const result = storageService.loadDemoData(get().selectedTaxYear);
-    get().refresh();
-    return result;
-  },
-  removeDemo: () => {
-    const result = storageService.removeDemoData();
-    get().refresh();
-    return result;
-  },
-  clearAll: () => {
-    storageService.clearAllData();
-    // A full reset also clears the persisted selected year -> back to default.
-    set({ selectedTaxYear: currentTaxYearStart() });
-    get().refresh();
-  },
-  mergeImport: (income, expenses) => {
-    const result = storageService.applyMerge(income, expenses);
-    get().refresh();
-    return result;
-  },
-  restoreImport: (income, expenses, preferences) => {
-    const result = storageService.applyRestore(income, expenses);
-    // Restore preferences too (e.g. the selected tax year).
-    const pref = preferences?.selectedTaxYear;
-    if (typeof pref === 'number' && Number.isFinite(pref)) {
-      get().setSelectedTaxYear(pref);
-    }
-    get().refresh();
-    return result;
-  },
-}));
+export const useTaxStore = create<TaxStore>((set, get) => {
+  const prefs = storageService.getAppPreferences();
+  return {
+    income: storageService.getIncomeRecords(),
+    expenses: storageService.getExpenseRecords(),
+    selectedTaxYear: loadSelectedYear(),
+    incomeSort: prefs.incomeSort || 'date-desc',
+    expenseSort: prefs.expenseSort || 'date-desc',
+    incomeSearch: '',
+    expenseSearch: '',
+    incomeFilters: defaultIncomeFilters,
+    expenseFilters: defaultExpenseFilters,
+    refresh: () =>
+      set({
+        income: storageService.getIncomeRecords(),
+        expenses: storageService.getExpenseRecords(),
+      }),
+    setSelectedTaxYear: (year) => {
+      try {
+        localStorage.setItem(SELECTED_TAX_YEAR_KEY, String(year));
+      } catch {
+        // ignore
+      }
+      set({ selectedTaxYear: year, incomeFilters: defaultIncomeFilters, expenseFilters: defaultExpenseFilters });
+    },
+    setIncomeSort: (sort) => {
+      storageService.setAppPreferences({ incomeSort: sort });
+      set({ incomeSort: sort });
+    },
+    setExpenseSort: (sort) => {
+      storageService.setAppPreferences({ expenseSort: sort });
+      set({ expenseSort: sort });
+    },
+    setIncomeSearch: (search) => set({ incomeSearch: search }),
+    setExpenseSearch: (search) => set({ expenseSearch: search }),
+    setIncomeFilters: (patch) => set((s) => ({ incomeFilters: { ...s.incomeFilters, ...patch } })),
+    setExpenseFilters: (patch) => set((s) => ({ expenseFilters: { ...s.expenseFilters, ...patch } })),
+    resetIncomeFilters: () => set({ incomeFilters: defaultIncomeFilters }),
+    resetExpenseFilters: () => set({ expenseFilters: defaultExpenseFilters }),
+    addIncome: (record) => {
+      storageService.addIncomeRecord(record);
+      get().refresh();
+    },
+    updateIncome: (id, record) => {
+      storageService.updateIncomeRecord(id, record);
+      get().refresh();
+    },
+    deleteIncome: (id) => {
+      storageService.deleteIncomeRecord(id);
+      get().refresh();
+    },
+    addExpense: (record) => {
+      storageService.addExpenseRecord(record);
+      get().refresh();
+    },
+    updateExpense: (id, record) => {
+      storageService.updateExpenseRecord(id, record);
+      get().refresh();
+    },
+    deleteExpense: (id) => {
+      storageService.deleteExpenseRecord(id);
+      get().refresh();
+    },
+    loadDemo: () => {
+      const result = storageService.loadDemoData(get().selectedTaxYear);
+      get().refresh();
+      return result;
+    },
+    removeDemo: () => {
+      const result = storageService.removeDemoData();
+      get().refresh();
+      return result;
+    },
+    clearAll: () => {
+      storageService.clearAllData();
+      set({ selectedTaxYear: currentTaxYearStart() });
+      get().refresh();
+    },
+    mergeImport: (income, expenses) => {
+      const result = storageService.applyMerge(income, expenses);
+      get().refresh();
+      return result;
+    },
+    restoreImport: (income, expenses, preferences) => {
+      const result = storageService.applyRestore(income, expenses);
+      const pref = preferences?.selectedTaxYear;
+      if (typeof pref === 'number' && Number.isFinite(pref)) {
+        get().setSelectedTaxYear(pref);
+      }
+      get().refresh();
+      return result;
+    },
+  };
+});

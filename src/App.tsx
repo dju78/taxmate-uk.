@@ -12,7 +12,7 @@ import { AddTransactionButton } from "./AddTransactionButton";
 import { StorageNoticeBanner } from "./StorageNoticeBanner";
 import { DataAndBackup } from "./DataAndBackup";
 import { IncomeFilters, ExpenseFilters } from "./FilterBar";
-import { filterIncomeRecords, filterExpenseRecords, uniqueSorted } from "./filters";
+import { filterIncomeRecords, filterExpenseRecords, searchIncomeRecords, searchExpenseRecords, sortIncomeRecords, sortExpenseRecords, uniqueSorted } from "./filters";
 import { ChartFigure } from "./ChartFigure";
 import { DeadlineTracker } from "./DeadlineTracker";
 
@@ -262,6 +262,14 @@ function Dashboard() {
   const setExpenseFilters = useTaxStore((s) => s.setExpenseFilters);
   const resetIncomeFilters = useTaxStore((s) => s.resetIncomeFilters);
   const resetExpenseFilters = useTaxStore((s) => s.resetExpenseFilters);
+  const incomeSearch = useTaxStore((s) => s.incomeSearch);
+  const expenseSearch = useTaxStore((s) => s.expenseSearch);
+  const incomeSort = useTaxStore((s) => s.incomeSort);
+  const expenseSort = useTaxStore((s) => s.expenseSort);
+  const setIncomeSearch = useTaxStore((s) => s.setIncomeSearch);
+  const setExpenseSearch = useTaxStore((s) => s.setExpenseSearch);
+  const setIncomeSort = useTaxStore((s) => s.setIncomeSort);
+  const setExpenseSort = useTaxStore((s) => s.setExpenseSort);
 
   // Deterministic reference date that selects the chosen tax year for all
   // window-based calculations (totals, tables, charts, breakdowns, counts).
@@ -490,7 +498,8 @@ function Dashboard() {
         const incomeSourceOptions = uniqueSorted(inTaxYear.map((r: any) => r.source));
         const incomeCategoryOptions = uniqueSorted(inTaxYear.map((r: any) => r.category));
         const filteredIncome = filterIncomeRecords(inTaxYear, incomeFilters);
-        const sortedRecords = [...filteredIncome].sort((a, b) => storageService.parseLocalDate(b.date).getTime() - storageService.parseLocalDate(a.date).getTime());
+        const searchedIncome = searchIncomeRecords(filteredIncome, incomeSearch);
+        const sortedRecords = sortIncomeRecords(searchedIncome, incomeSort);
 
         return (
           <>
@@ -580,7 +589,7 @@ function Dashboard() {
                     <h3 style={{ fontSize: "18px", fontWeight: "700", fontFamily: "Manrope, sans-serif" }}>
                       Income History <span style={{ fontSize: "13px", fontWeight: "500", color: TOKENS.colors.neutral[500] }}>· {incomeTaxYearLabel}</span>
                     </h3>
-                    <span role="status" aria-live="polite" style={{ fontSize: "13px", color: TOKENS.colors.neutral[500] }}>Showing {filteredIncome.length} of {inTaxYear.length} records</span>
+                    <span role="status" aria-live="polite" style={{ fontSize: "13px", color: TOKENS.colors.neutral[500] }}>Showing {searchedIncome.length} of {inTaxYear.length} records</span>
                   </div>
                   <IncomeFilters
                     filters={incomeFilters}
@@ -588,8 +597,12 @@ function Dashboard() {
                     onReset={resetIncomeFilters}
                     sources={incomeSourceOptions}
                     categories={incomeCategoryOptions}
+                    search={incomeSearch}
+                    onSearchChange={setIncomeSearch}
+                    sort={incomeSort}
+                    onSortChange={setIncomeSort}
                   />
-                  {filteredIncome.length === 0 ? (
+                  {searchedIncome.length === 0 ? (
                     <div style={{ padding: "24px", textAlign: "center", color: TOKENS.colors.neutral[600] }}>
                       No income records match your filters.
                     </div>
@@ -702,7 +715,8 @@ function Dashboard() {
 
         const expenseCategoryOptions = uniqueSorted(expensesInTaxYear.map((r: any) => r.category));
         const filteredExpenses = filterExpenseRecords(expensesInTaxYear, expenseFilters);
-        const sortedRecords = [...filteredExpenses].sort((a, b) => storageService.parseLocalDate(b.date).getTime() - storageService.parseLocalDate(a.date).getTime());
+        const searchedExpenses = searchExpenseRecords(filteredExpenses, expenseSearch);
+        const sortedRecords = sortExpenseRecords(searchedExpenses, expenseSort);
 
         return (
           <>
@@ -768,15 +782,19 @@ function Dashboard() {
                     <h3 style={{ fontSize: "18px", fontWeight: "700", fontFamily: "Manrope, sans-serif" }}>
                       Expense History <span style={{ fontSize: "13px", fontWeight: "500", color: TOKENS.colors.neutral[500] }}>· {expenseTaxYearLabel}</span>
                     </h3>
-                    <span role="status" aria-live="polite" style={{ fontSize: "13px", color: TOKENS.colors.neutral[500] }}>Showing {filteredExpenses.length} of {expensesInTaxYear.length} records</span>
+                    <span role="status" aria-live="polite" style={{ fontSize: "13px", color: TOKENS.colors.neutral[500] }}>Showing {searchedExpenses.length} of {expensesInTaxYear.length} records</span>
                   </div>
                   <ExpenseFilters
                     filters={expenseFilters}
                     onChange={setExpenseFilters}
                     onReset={resetExpenseFilters}
                     categories={expenseCategoryOptions}
+                    search={expenseSearch}
+                    onSearchChange={setExpenseSearch}
+                    sort={expenseSort}
+                    onSortChange={setExpenseSort}
                   />
-                  {filteredExpenses.length === 0 ? (
+                  {searchedExpenses.length === 0 ? (
                     <div style={{ padding: "24px", textAlign: "center", color: TOKENS.colors.neutral[600] }}>
                       No expense records match your filters.
                     </div>

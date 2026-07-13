@@ -96,10 +96,32 @@ export interface ExpenseCalcRecord {
   category?: string;
 }
 
-export interface ExportPreferences {
+export type IncomeSortOption = 
+  | 'date-desc' | 'date-asc' 
+  | 'amount-desc' | 'amount-asc' 
+  | 'source-asc' | 'source-desc' 
+  | 'status-overdue';
+
+export type ExpenseSortOption = 
+  | 'date-desc' | 'date-asc' 
+  | 'amount-desc' | 'amount-asc' 
+  | 'merchant-asc' | 'merchant-desc' 
+  | 'category-asc';
+
+export interface AppPreferences {
   selectedTaxYear?: number;
+  incomeSort?: IncomeSortOption;
+  expenseSort?: ExpenseSortOption;
+  onboardingVersion?: number;
+  onboardingCompleted?: boolean;
+  onboardingSkipped?: boolean;
+  completedAt?: string;
+  lastExportDate?: string;
+  backupReminderSnoozedUntil?: string;
   [key: string]: unknown;
 }
+
+export type ExportPreferences = AppPreferences;
 
 // Approved backup schema.
 export interface ExportBundle {

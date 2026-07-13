@@ -1,6 +1,6 @@
 // Storage service - abstraction layer for income and expense data persistence
 // Currently uses localStorage; can be replaced with backend API
-import type { IncomeRecord, ExpenseRecord, ExpenseCategory, ExportBundle, ExportPreferences, IncomeCalcRecord, ExpenseCalcRecord } from './types';
+import type { IncomeRecord, ExpenseRecord, ExpenseCategory, ExportBundle, ExportPreferences, AppPreferences, IncomeCalcRecord, ExpenseCalcRecord } from './types';
 import { isExpenseCategory, LEGACY_EXPENSE_CATEGORY_MAP } from './types';
 import { isValidAmount, isValidDateString } from './validation';
 
@@ -967,5 +967,25 @@ export const storageService = {
       { key: EXPENSE_STORAGE_KEY, value: JSON.stringify(expenses) },
     ]);
     return { income: income.length, expenses: expenses.length };
+  },
+
+  // PREFERENCES
+  getAppPreferences: (): AppPreferences => {
+    try {
+      const raw = localStorage.getItem('taxmate_app_preferences');
+      if (raw) return JSON.parse(raw) as AppPreferences;
+    } catch {
+      // ignore
+    }
+    return {};
+  },
+  
+  setAppPreferences: (prefs: Partial<AppPreferences>): void => {
+    try {
+      const current = storageService.getAppPreferences();
+      localStorage.setItem('taxmate_app_preferences', JSON.stringify({ ...current, ...prefs }));
+    } catch {
+      // ignore
+    }
   },
 };
