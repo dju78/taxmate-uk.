@@ -439,7 +439,7 @@ function Dashboard() {
             </div>
 
             <div style={{ marginTop: "16px" }}>
-              <DeadlineTracker />
+              <DeadlineTracker selectedTaxYearLabel={selectedTaxYearLabel} />
             </div>
           </>
         );
@@ -618,7 +618,7 @@ function Dashboard() {
                         subtitle={incomeTaxYearLabel}
                         axisLabel="Received income (£) by month"
                         columns={["Received"]}
-                        rows={Object.entries(incomeByMonth).sort().map(([month, amount]) => ({ label: month.slice(5), values: [amount] }))}
+                        rows={Object.entries(incomeByMonth).sort().map(([month, amount]) => ({ label: monthShort(month), values: [amount] }))}
                       >
                         <div style={{ display: "flex", alignItems: "flex-end", gap: "8px", height: "160px" }}>
                           {Object.entries(incomeByMonth).sort().map(([month, amount]) => {
@@ -641,6 +641,7 @@ function Dashboard() {
                           title="Income by source"
                           subtitle={incomeTaxYearLabel}
                           axisLabel="Received income (£) by source"
+                          rowHeaderLabel="Source"
                           columns={["Received"]}
                           rows={Object.entries(incomeBySource).map(([source, amount]) => ({ label: source, values: [amount] }))}
                         >
@@ -804,7 +805,7 @@ function Dashboard() {
                         subtitle={expenseTaxYearLabel}
                         axisLabel="Recorded expenses (£) by month"
                         columns={["Expenses"]}
-                        rows={Object.entries(expensesByMonth).sort().map(([month, amount]) => ({ label: month.slice(5), values: [amount] }))}
+                        rows={Object.entries(expensesByMonth).sort().map(([month, amount]) => ({ label: monthShort(month), values: [amount] }))}
                       >
                         <div style={{ display: "flex", alignItems: "flex-end", gap: "8px", height: "160px" }}>
                           {Object.entries(expensesByMonth).sort().map(([month, amount]) => {
@@ -827,6 +828,7 @@ function Dashboard() {
                           title="Expenses by category"
                           subtitle={expenseTaxYearLabel}
                           axisLabel="Recorded expenses (£) by category"
+                          rowHeaderLabel="Category"
                           columns={["Expenses"]}
                           rows={Object.entries(expensesByCategory).map(([category, amount]) => ({ label: category, values: [amount] }))}
                         >

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button, Alert } from './components';
-import { isValidAmount, isValidDateString } from './validation';
+import { isValidAmount, isValidDateString, formatLocalDate } from './validation';
 import { EXPENSE_CATEGORIES } from './types';
 import type { ExpenseRecord } from './types';
 
@@ -44,7 +44,8 @@ export const ExpenseForm = ({ initialData = null, onSubmit, onCancel }: ExpenseF
           notes: initialData.notes ?? '',
         }
       : {
-          date: new Date().toISOString().split('T')[0],
+          // Use local wall-clock date to avoid BST UTC midnight off-by-one.
+          date: formatLocalDate(new Date()),
           merchant: '',
           description: '',
           category: EXPENSE_CATEGORIES[0],

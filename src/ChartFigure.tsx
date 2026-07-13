@@ -11,6 +11,15 @@ interface ChartFigureProps {
   rows: { label: string; values: number[] }[];
   // Visible key swatches (decorative; the table carries the same info).
   legend?: { label: string; color: string }[];
+  // Label for the row header column of the SR table. Defaults to "Period" which
+  // is correct for monthly charts, but charts grouped by source or category
+  // should pass "Source" or "Category" respectively.
+  rowHeaderLabel?: string;
+  // A short plain-text summary of the key insight, e.g.
+  // "June received income was £2,200. No expenses were recorded."
+  // Surfaced above the data table for screen reader users who want the
+  // headline without navigating the full table.
+  summary?: string;
   children: ReactNode; // the decorative visual bars
 }
 
@@ -19,8 +28,18 @@ const money = (n: number) => `£${n.toFixed(2)}`;
 // Wraps a decorative bar chart with an accessible structure: a <figure> with a
 // visible caption, a visible legend + axis label, the decorative visual (hidden
 // from assistive tech), and a screen-reader-only data table carrying the exact
-// numbers.
-export function ChartFigure({ title, subtitle, axisLabel, columns, rows, legend, children }: ChartFigureProps) {
+// numbers. An optional `summary` gives a concise prose headline.
+export function ChartFigure({
+  title,
+  subtitle,
+  axisLabel,
+  columns,
+  rows,
+  legend,
+  rowHeaderLabel = 'Period',
+  summary,
+  children,
+}: ChartFigureProps) {
   const captionId = useId();
   const tableId = useId();
   return (
@@ -49,27 +68,31 @@ export function ChartFigure({ title, subtitle, axisLabel, columns, rows, legend,
           accessible equivalent. */}
       <div aria-hidden="true">{children}</div>
 
-      <table id={tableId} className="sr-only">
-        <caption>{`${title}${subtitle ? ` (${subtitle})` : ''} — ${axisLabel}`}</caption>
-        <thead>
-          <tr>
-            <th scope="col">Period</th>
-            {columns.map((c) => (
-              <th key={c} scope="col">{c}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((r) => (
-            <tr key={r.label}>
-              <th scope="row">{r.label}</th>
-              {r.values.map((v, i) => (
-                <td key={i}>{money(v)}</td>
+      {/* Screen-reader content: concise summary first, then full data table. */}
+      <div className="sr-only">
+        {summary && <p>{summary}</p>}
+        <table id={tableId}>
+          <caption>{`${title}${subtitle ? ` (${subtitle})` : ''} — ${axisLabel}`}</caption>
+          <thead>
+            <tr>
+              <th scope="col">{rowHeaderLabel}</th>
+              {columns.map((c) => (
+                <th key={c} scope="col">{c}</th>
               ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.label}>
+                <th scope="row">{r.label}</th>
+                {r.values.map((v, i) => (
+                  <td key={i}>{money(v)}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </figure>
   );
 }

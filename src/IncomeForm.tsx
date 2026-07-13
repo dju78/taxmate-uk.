@@ -1,18 +1,21 @@
 import { useState } from 'react';
 import { Button, Alert } from './components';
 import { INCOME_STATUS, INCOME_STATUS_LABELS, INCOME_STATUS_OPTIONS } from './storage';
-import { isValidAmount, isValidDateString } from './validation';
-import type { IncomeRecord } from './types';
+import { isValidAmount, isValidDateString, formatLocalDate } from './validation';
+import type { IncomeRecord, IncomeStatus } from './types';
 
 const INCOME_CATEGORIES = ['Client work', 'Freelance', 'Passive income', 'Other'] as const;
+type IncomeCategory = (typeof INCOME_CATEGORIES)[number];
 
 interface IncomeFormData {
   date: string;
   source: string;
   description: string;
-  category: string;
+  // Tightened to the approved enum rather than plain string.
+  category: IncomeCategory;
   amount: string;
-  status: string;
+  // Tightened to the IncomeStatus union rather than plain string.
+  status: IncomeStatus;
   notes: string;
 }
 
@@ -38,13 +41,18 @@ export const IncomeForm = ({ initialData = null, onSubmit, onCancel }: IncomeFor
           date: initialData.date,
           source: initialData.source,
           description: initialData.description ?? '',
-          category: initialData.category ?? 'Client work',
+          category: (INCOME_CATEGORIES as readonly string[]).includes(initialData.category ?? '')
+            ? (initialData.category as IncomeCategory)
+            : 'Client work',
           amount: initialData.amount,
-          status: initialData.status ?? INCOME_STATUS.RECEIVED,
+          status: (INCOME_STATUS_OPTIONS as readonly string[]).includes(initialData.status ?? '')
+            ? (initialData.status as IncomeStatus)
+            : INCOME_STATUS.RECEIVED,
           notes: initialData.notes ?? '',
         }
       : {
-          date: new Date().toISOString().split('T')[0],
+          // Use local wall-clock date to avoid BST UTC midnight off-by-one.
+          date: formatLocalDate(new Date()),
           source: '',
           description: '',
           category: 'Client work',
@@ -109,8 +117,12 @@ export const IncomeForm = ({ initialData = null, onSubmit, onCancel }: IncomeFor
         {errors[key]}
       </div>
     ) : null;
+
+  // Returns aria-invalid and aria-describedby for any field (required or optional).
+  // Optional fields with no current error still get the helper applied so
+  // that if validation rules are added later the wiring is already in place.
   const aria = (key: keyof IncomeFormData, id: string) => ({
-    'aria-invalid': !!errors[key],
+    'aria-invalid': errors[key] ? (true as const) : undefined,
     'aria-describedby': errors[key] ? `${id}-error` : undefined,
   });
 
@@ -163,7 +175,9 @@ export const IncomeForm = ({ initialData = null, onSubmit, onCancel }: IncomeFor
             value={formData.description}
             onChange={handleChange}
             className={`${fieldCls} min-h-20`}
+            {...aria('description', 'income-description')}
           />
+          {err('description', 'income-description')}
         </div>
 
         <div>
@@ -238,7 +252,9 @@ export const IncomeForm = ({ initialData = null, onSubmit, onCancel }: IncomeFor
             value={formData.notes}
             onChange={handleChange}
             className={`${fieldCls} min-h-16`}
+            {...aria('notes', 'income-notes')}
           />
+          {err('notes', 'income-notes')}
         </div>
 
         <div className="mt-4 flex justify-end gap-3">

@@ -1,5 +1,15 @@
 // Shared strict validators for financial form inputs.
 
+// Format a Date as a YYYY-MM-DD string using local wall-clock time (not UTC).
+// new Date().toISOString() uses UTC and can return the previous calendar date
+// shortly after midnight during British Summer Time — use this instead.
+export const formatLocalDate = (d: Date): string => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+
 // A valid money amount: a non-negative decimal with up to 2 places, greater
 // than zero. Rejects values like "100abc", "1e3", " ", "-5", "1.999".
 export const isValidAmount = (value: unknown): boolean => {
