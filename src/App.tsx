@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, ReactNode } from "react";
 import { TOKENS } from "./tokens";
 import { Alert, Switch, Button, Badge, EmptyState, TransactionList } from "./components";
 import { IncomeForm } from "./IncomeForm";
@@ -64,7 +64,8 @@ const Icons = {
 };
 
 // Modal component (accessible dialog)
-const Modal = ({ isOpen, onClose, children, title }) => {
+interface ModalProps { isOpen: boolean; onClose: () => void; children: ReactNode; title: string; }
+const Modal = ({ isOpen, onClose, children, title }: ModalProps) => {
   const dialogRef = useDialog(isOpen, onClose);
   if (!isOpen) return null;
   const titleId = 'modal-title';
@@ -128,7 +129,8 @@ const Modal = ({ isOpen, onClose, children, title }) => {
 };
 
 // Confirmation Dialog component (accessible alertdialog)
-const ConfirmDialog = ({ isOpen, onConfirm, onCancel, title, message, confirmText = 'Delete', cancelText = 'Cancel' }) => {
+interface ConfirmDialogProps { isOpen: boolean; onConfirm: () => void; onCancel: () => void; title: string; message: string; confirmText?: string; cancelText?: string; }
+const ConfirmDialog = ({ isOpen, onConfirm, onCancel, title, message, confirmText = 'Delete', cancelText = 'Cancel' }: ConfirmDialogProps) => {
   const dialogRef = useDialog(isOpen, onCancel);
   if (!isOpen) return null;
   const titleId = 'confirm-title';
@@ -210,7 +212,8 @@ const ConfirmDialog = ({ isOpen, onConfirm, onCancel, title, message, confirmTex
 };
 
 // Inline edit/delete actions for a transaction row
-const ActionLinks = ({ onEdit, onDelete, label }) => (
+interface ActionMenuProps { onEdit?: () => void; onDelete?: () => void; label: string; }
+const ActionLinks = ({ onEdit, onDelete, label }: ActionMenuProps) => (
   <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
     <button
       onClick={onEdit}
@@ -235,16 +238,16 @@ function Dashboard() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [monthlyReportsEnabled, setMonthlyReportsEnabled] = useState(true);
   const [showIncomeModal, setShowIncomeModal] = useState(false);
-  const [editingIncomeId, setEditingIncomeId] = useState(null);
+  const [editingIncomeId, setEditingIncomeId] = useState<string | null>(null);
   const [showExpenseModal, setShowExpenseModal] = useState(false);
-  const [editingExpenseId, setEditingExpenseId] = useState(null);
-  const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, type: null, id: null });
-  const [successMessage, setSuccessMessage] = useState(null);
+  const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<{ isOpen: boolean; type: string | null; id: string | null }>({ isOpen: false, type: null, id: null });
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [storageError] = useState(() => storageService.getStorageError());
 
   // Records + selected tax year live in the Zustand store (single source of truth).
-  const incomeRecords = useTaxStore((s) => s.income);
-  const expenseRecords = useTaxStore((s) => s.expenses);
+  const incomeRecords = useTaxStore((s) => s.income) as any[];
+  const expenseRecords = useTaxStore((s) => s.expenses) as any[];
   const selectedTaxYear = useTaxStore((s) => s.selectedTaxYear);
   const storeAddIncome = useTaxStore((s) => s.addIncome);
   const storeUpdateIncome = useTaxStore((s) => s.updateIncome);
@@ -263,7 +266,7 @@ function Dashboard() {
   // window-based calculations (totals, tables, charts, breakdowns, counts).
   const taxRef = storageService.getTaxYearStartForYear(selectedTaxYear);
   const selectedTaxYearLabel = taxYearStartToLabel(selectedTaxYear);
-  const hasDemoData = incomeRecords.some((r) => r.isDemo) || expenseRecords.some((r) => r.isDemo);
+  const hasDemoData = incomeRecords.some((r: any) => r.isDemo) || expenseRecords.some((r: any) => r.isDemo);
 
   useEffect(() => {
     storageService.migrateIfNeeded();
@@ -271,10 +274,10 @@ function Dashboard() {
 
   // Transaction form handlers + modals live at the App level so the global
   // "+ Add transaction" action can open them from any view.
-  const handleSaveIncome = (formData) => {
+  const handleSaveIncome = (formData: any) => {
     try {
       if (editingIncomeId) {
-        storeUpdateIncome(editingIncomeId, formData);
+        storeUpdateIncome(editingIncomeId as string, formData);
         setSuccessMessage('Income record updated successfully');
       } else {
         storeAddIncome(formData);
@@ -287,10 +290,10 @@ function Dashboard() {
       console.error('Error saving income record:', error);
     }
   };
-  const handleSaveExpense = (formData) => {
+  const handleSaveExpense = (formData: any) => {
     try {
       if (editingExpenseId) {
-        storeUpdateExpense(editingExpenseId, formData);
+        storeUpdateExpense(editingExpenseId as string, formData);
         setSuccessMessage('Expense record updated successfully');
       } else {
         storeAddExpense(formData);
@@ -345,7 +348,7 @@ function Dashboard() {
           1,
           ...monthKeys.map((k) => Math.max(dashIncomeByMonth[k] || 0, dashExpensesByMonth[k] || 0))
         );
-        const monthShort = (key) => {
+        const monthShort = (key: string) => {
           const [y, m] = key.split("-").map(Number);
           return new Date(y, m - 1, 1).toLocaleDateString("en-GB", { month: "short" });
         };
@@ -456,7 +459,7 @@ function Dashboard() {
         const avgAvailableFrom = storageService.getFirstAverageAvailableDate().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
         const incomeTaxYearLabel = selectedTaxYearLabel;
         const inTaxYear = storageService.getIncomeInTaxYear(incomeRecords, taxRef);
-        const statusOf = (r) => storageService.normaliseIncomeStatus(r.status);
+        const statusOf = (r: any) => storageService.normaliseIncomeStatus(r.status);
         const receivedCount = inTaxYear.filter(r => statusOf(r) === INCOME_STATUS.RECEIVED).length;
         const pendingCount = inTaxYear.filter(r => statusOf(r) === INCOME_STATUS.PENDING).length;
         const overdueCount = inTaxYear.filter(r => statusOf(r) === INCOME_STATUS.OVERDUE).length;
@@ -464,29 +467,29 @@ function Dashboard() {
         const incomeBySource = storageService.getIncomeBySource(incomeRecords, taxRef);
         const isCurrentYear = storageService.isCurrentTaxYear(selectedTaxYear);
 
-        const handleEditIncome = (id) => {
+        const handleEditIncome = (id: string) => {
           setEditingIncomeId(id);
           setShowIncomeModal(true);
         };
 
-        const handleDeleteIncome = (id) => {
+        const handleDeleteIncome = (id: string) => {
           setConfirmDialog({ isOpen: true, type: 'income', id });
         };
 
-        const getStatusBadgeVariant = (status) => {
+        const getStatusBadgeVariant = (status: string) => {
           const s = storageService.normaliseIncomeStatus(status);
           if (s === INCOME_STATUS.RECEIVED) return 'success';
           if (s === INCOME_STATUS.PENDING) return 'warning';
           if (s === INCOME_STATUS.OVERDUE) return 'error';
           return 'default';
         };
-        const getStatusLabel = (status) =>
+        const getStatusLabel = (status: string) =>
           INCOME_STATUS_LABELS[storageService.normaliseIncomeStatus(status)] || status;
 
-        const incomeSourceOptions = uniqueSorted(inTaxYear.map((r) => r.source));
-        const incomeCategoryOptions = uniqueSorted(inTaxYear.map((r) => r.category));
+        const incomeSourceOptions = uniqueSorted(inTaxYear.map((r: any) => r.source));
+        const incomeCategoryOptions = uniqueSorted(inTaxYear.map((r: any) => r.category));
         const filteredIncome = filterIncomeRecords(inTaxYear, incomeFilters);
-        const sortedRecords = [...filteredIncome].sort((a, b) => storageService.parseLocalDate(b.date) - storageService.parseLocalDate(a.date));
+        const sortedRecords = [...filteredIncome].sort((a, b) => storageService.parseLocalDate(b.date).getTime() - storageService.parseLocalDate(a.date).getTime());
 
         return (
           <>
@@ -592,17 +595,17 @@ function Dashboard() {
                   ) : (
                     <TransactionList
                       isMobile={isMobile}
-                      getKey={(r) => r.id}
+                      getKey={(r: any) => r.id}
                       rows={sortedRecords}
                       columns={[
-                        { key: "date", label: "Date", render: (r) => storageService.parseLocalDate(r.date).toLocaleDateString() },
-                        { key: "source", label: "Source", render: (r) => (
+                        { key: "date", label: "Date", render: (r: any) => storageService.parseLocalDate(r.date).toLocaleDateString() },
+                        { key: "source", label: "Source", render: (r: any) => (
                           <span>{r.source}{r.isDemo && <span style={{ marginLeft: "6px" }}><Badge variant="default">Demo</Badge></span>}</span>
                         ) },
-                        { key: "category", label: "Category", render: (r) => r.category },
-                        { key: "amount", label: "Amount", render: (r) => <strong>£{parseFloat(r.amount).toFixed(2)}</strong> },
-                        { key: "status", label: "Status", render: (r) => <Badge variant={getStatusBadgeVariant(r.status)}>{getStatusLabel(r.status)}</Badge> },
-                        { key: "actions", label: "Actions", align: "right", render: (r) => (
+                        { key: "category", label: "Category", render: (r: any) => r.category },
+                        { key: "amount", label: "Amount", render: (r: any) => <strong>£{parseFloat(r.amount as string).toFixed(2)}</strong> },
+                        { key: "status", label: "Status", render: (r: any) => <Badge variant={getStatusBadgeVariant(r.status)}>{getStatusLabel(r.status)}</Badge> },
+                        { key: "actions", label: "Actions", align: "right", render: (r: any) => (
                           <ActionLinks onEdit={() => handleEditIncome(r.id)} onDelete={() => handleDeleteIncome(r.id)} label={`income from ${r.source}`} />
                         ) },
                       ]}
@@ -618,7 +621,7 @@ function Dashboard() {
                         subtitle={incomeTaxYearLabel}
                         axisLabel="Received income (£) by month"
                         columns={["Received"]}
-                        rows={Object.entries(incomeByMonth).sort().map(([month, amount]) => ({ label: monthShort(month), values: [amount] }))}
+                        rows={Object.entries(incomeByMonth).sort().map(([month, amount]) => ({ label: month.slice(5), values: [amount] }))}
                       >
                         <div style={{ display: "flex", alignItems: "flex-end", gap: "8px", height: "160px" }}>
                           {Object.entries(incomeByMonth).sort().map(([month, amount]) => {
@@ -687,18 +690,18 @@ function Dashboard() {
         const isCurrentYear = storageService.isCurrentTaxYear(selectedTaxYear);
         const expensesInTaxYear = storageService.getExpensesInTaxYear(expenseRecords, taxRef);
 
-        const handleEditExpense = (id) => {
+        const handleEditExpense = (id: string) => {
           setEditingExpenseId(id);
           setShowExpenseModal(true);
         };
 
-        const handleDeleteExpense = (id) => {
+        const handleDeleteExpense = (id: string) => {
           setConfirmDialog({ isOpen: true, type: 'expense', id });
         };
 
-        const expenseCategoryOptions = uniqueSorted(expensesInTaxYear.map((r) => r.category));
+        const expenseCategoryOptions = uniqueSorted(expensesInTaxYear.map((r: any) => r.category));
         const filteredExpenses = filterExpenseRecords(expensesInTaxYear, expenseFilters);
-        const sortedRecords = [...filteredExpenses].sort((a, b) => storageService.parseLocalDate(b.date) - storageService.parseLocalDate(a.date));
+        const sortedRecords = [...filteredExpenses].sort((a, b) => storageService.parseLocalDate(b.date).getTime() - storageService.parseLocalDate(a.date).getTime());
 
         return (
           <>
@@ -779,17 +782,17 @@ function Dashboard() {
                   ) : (
                     <TransactionList
                       isMobile={isMobile}
-                      getKey={(r) => r.id}
+                      getKey={(r: any) => r.id}
                       rows={sortedRecords}
                       columns={[
-                        { key: "date", label: "Date", render: (r) => storageService.parseLocalDate(r.date).toLocaleDateString() },
-                        { key: "merchant", label: "Merchant", render: (r) => (
+                        { key: "date", label: "Date", render: (r: any) => storageService.parseLocalDate(r.date).toLocaleDateString() },
+                        { key: "merchant", label: "Merchant", render: (r: any) => (
                           <span>{r.merchant}{r.isDemo && <span style={{ marginLeft: "6px" }}><Badge variant="default">Demo</Badge></span>}</span>
                         ) },
-                        { key: "category", label: "Category", render: (r) => r.category },
-                        { key: "amount", label: "Amount", render: (r) => <strong>£{parseFloat(r.amount).toFixed(2)}</strong> },
-                        { key: "method", label: "Method", render: (r) => r.paymentMethod },
-                        { key: "actions", label: "Actions", align: "right", render: (r) => (
+                        { key: "category", label: "Category", render: (r: any) => r.category },
+                        { key: "amount", label: "Amount", render: (r: any) => <strong>£{parseFloat(r.amount as string).toFixed(2)}</strong> },
+                        { key: "method", label: "Method", render: (r: any) => r.paymentMethod },
+                        { key: "actions", label: "Actions", align: "right", render: (r: any) => (
                           <ActionLinks onEdit={() => handleEditExpense(r.id)} onDelete={() => handleDeleteExpense(r.id)} label={`expense from ${r.merchant}`} />
                         ) },
                       ]}
@@ -805,7 +808,7 @@ function Dashboard() {
                         subtitle={expenseTaxYearLabel}
                         axisLabel="Recorded expenses (£) by month"
                         columns={["Expenses"]}
-                        rows={Object.entries(expensesByMonth).sort().map(([month, amount]) => ({ label: monthShort(month), values: [amount] }))}
+                        rows={Object.entries(expensesByMonth).sort().map(([month, amount]) => ({ label: month.slice(5), values: [amount] }))}
                       >
                         <div style={{ display: "flex", alignItems: "flex-end", gap: "8px", height: "160px" }}>
                           {Object.entries(expensesByMonth).sort().map(([month, amount]) => {
@@ -1005,11 +1008,11 @@ function Dashboard() {
             overflowY: "auto",
             display: "flex",
             flexDirection: "column",
-            borderRight: `1px solid ${TOKENS.colors.neutral[800]}`,
+            borderRight: `1px solid ${TOKENS.colors.neutral[700]}`,
           }}
         >
           {/* Logo */}
-          <div style={{ padding: railMode ? "22px 0" : "24px 18px", display: "flex", alignItems: "center", justifyContent: railMode ? "center" : "flex-start", gap: "12px", borderBottom: `1px solid ${TOKENS.colors.neutral[800]}` }}>
+          <div style={{ padding: railMode ? "22px 0" : "24px 18px", display: "flex", alignItems: "center", justifyContent: railMode ? "center" : "flex-start", gap: "12px", borderBottom: `1px solid ${TOKENS.colors.neutral[700]}` }}>
             <div style={{ width: "32px", height: "32px", backgroundColor: TOKENS.colors.green[500], borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               <Icons.Logo />
             </div>
@@ -1044,7 +1047,7 @@ function Dashboard() {
                 }}
                 onMouseEnter={(e) => {
                   if (activeNav !== item.id) {
-                    e.currentTarget.style.backgroundColor = TOKENS.colors.neutral[800];
+                    e.currentTarget.style.backgroundColor = TOKENS.colors.neutral[700];
                     e.currentTarget.style.color = "white";
                   }
                 }}
@@ -1063,7 +1066,7 @@ function Dashboard() {
 
           {/* Footer */}
           {!railMode && (
-            <div style={{ padding: "24px 16px", borderTop: `1px solid ${TOKENS.colors.neutral[800]}`, fontSize: "12px", color: TOKENS.colors.neutral[500] }}>
+            <div style={{ padding: "24px 16px", borderTop: `1px solid ${TOKENS.colors.neutral[700]}`, fontSize: "12px", color: TOKENS.colors.neutral[500] }}>
               <p>© 2026 Daramola Digital Labs.</p>
               <p style={{ marginTop: "8px" }}>TaxMate UK is a product of Daramola Digital Labs.</p>
             </div>
@@ -1106,7 +1109,7 @@ function Dashboard() {
             right: 0,
             display: "flex",
             backgroundColor: TOKENS.colors.neutral[900],
-            borderTop: `1px solid ${TOKENS.colors.neutral[800]}`,
+            borderTop: `1px solid ${TOKENS.colors.neutral[700]}`,
             zIndex: 900,
           }}
         >
@@ -1191,10 +1194,10 @@ function Dashboard() {
         onConfirm={() => {
           try {
             if (confirmDialog.type === 'income') {
-              storeDeleteIncome(confirmDialog.id);
+              storeDeleteIncome(confirmDialog.id as string);
               setSuccessMessage('Income record deleted successfully');
             } else if (confirmDialog.type === 'expense') {
-              storeDeleteExpense(confirmDialog.id);
+              storeDeleteExpense(confirmDialog.id as string);
               setSuccessMessage('Expense record deleted successfully');
             }
             setTimeout(() => setSuccessMessage(null), 3000);

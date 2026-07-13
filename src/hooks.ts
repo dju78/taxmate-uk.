@@ -1,8 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, RefObject } from 'react';
+
+type Breakpoint = 'mobile' | 'tablet' | 'desktop';
 
 // Breakpoints (px). mobile < 640 <= tablet <= 1024 < desktop
 export const useBreakpoint = () => {
-  const getBreakpoint = () => {
+  const getBreakpoint = (): Breakpoint => {
     if (typeof window === 'undefined') return 'desktop';
     const w = window.innerWidth;
     if (w < 640) return 'mobile';
@@ -10,7 +12,7 @@ export const useBreakpoint = () => {
     return 'desktop';
   };
 
-  const [breakpoint, setBreakpoint] = useState(getBreakpoint);
+  const [breakpoint, setBreakpoint] = useState<Breakpoint>(getBreakpoint);
 
   useEffect(() => {
     const handler = () => setBreakpoint(getBreakpoint());
@@ -37,19 +39,19 @@ const FOCUSABLE = [
 
 // Accessible dialog behaviour: focus the dialog on open, trap Tab within it,
 // close on Escape, and return focus to the previously-focused element on close.
-export const useDialog = (isOpen, onClose) => {
-  const dialogRef = useRef(null);
-  const previouslyFocused = useRef(null);
+export const useDialog = (isOpen: boolean, onClose: () => void): RefObject<HTMLDivElement | null> => {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const previouslyFocused = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (!isOpen) return undefined;
 
-    previouslyFocused.current = document.activeElement;
+    previouslyFocused.current = document.activeElement as HTMLElement | null;
     const node = dialogRef.current;
 
     const focusFirst = () => {
       if (!node) return;
-      const focusables = node.querySelectorAll(FOCUSABLE);
+      const focusables = node.querySelectorAll<HTMLElement>(FOCUSABLE);
       if (focusables.length > 0) {
         focusables[0].focus();
       } else {
@@ -58,14 +60,14 @@ export const useDialog = (isOpen, onClose) => {
     };
     focusFirst();
 
-    const handleKeyDown = (e) => {
+    const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.stopPropagation();
         onClose();
         return;
       }
       if (e.key === 'Tab' && node) {
-        const focusables = Array.from(node.querySelectorAll(FOCUSABLE)).filter(
+        const focusables = Array.from(node.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
           (el) => el.offsetParent !== null || el === document.activeElement
         );
         if (focusables.length === 0) {
