@@ -11,6 +11,7 @@ import { TaxYearSelector } from "./TaxYearSelector";
 import { AddTransactionButton } from "./AddTransactionButton";
 import { StorageNoticeBanner } from "./StorageNoticeBanner";
 import { BackupReminderBanner } from "./BackupReminderBanner";
+import { OnboardingModal } from "./OnboardingModal";
 import { DataAndBackup } from "./DataAndBackup";
 import { IncomeFilters, ExpenseFilters } from "./FilterBar";
 import { filterIncomeRecords, filterExpenseRecords, searchIncomeRecords, searchExpenseRecords, sortIncomeRecords, sortExpenseRecords, uniqueSorted } from "./filters";
@@ -1099,6 +1100,7 @@ function Dashboard() {
         {/* Persistent, prominent browser-storage notice (all views) */}
         <StorageNoticeBanner />
         <BackupReminderBanner />
+        <OnboardingModal />
         <div style={{ width: "100%", maxWidth: "1440px", margin: "0 auto", padding: isMobile ? "20px 16px" : "32px 36px", boxSizing: "border-box" }}>
           {/* Global toolbar (visible across all views) */}
           <div className="mb-6 flex flex-wrap items-center justify-end gap-3">
