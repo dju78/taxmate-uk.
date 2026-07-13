@@ -947,6 +947,21 @@ function Dashboard() {
               </div>
             </div>
 
+            <div style={{ backgroundColor: "white", border: `1px solid ${TOKENS.colors.neutral[200]}`, borderRadius: "14px", padding: "24px", marginTop: "24px" }}>
+              <h2 style={{ fontSize: "18px", fontWeight: "700", marginBottom: "16px", fontFamily: "Manrope, sans-serif" }}>
+                Onboarding Tour
+              </h2>
+              <p style={{ color: TOKENS.colors.neutral[600], marginBottom: "16px", fontSize: "14px" }}>
+                Missed the initial setup or want to review how TaxMate handles your data?
+              </p>
+              <Button variant="secondary" onClick={() => {
+                storageService.setAppPreferences({ onboardingVersion: 0 });
+                window.location.reload();
+              }}>
+                Restart onboarding
+              </Button>
+            </div>
+
             <div style={{ marginTop: "24px" }}>
               <DataAndBackup />
             </div>
