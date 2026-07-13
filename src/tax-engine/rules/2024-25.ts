@@ -34,5 +34,13 @@ export const rules2024_25: TaxRules = {
     upperProfitsLimit: 5027000,
     mainRate: 0.06,
     upperRate: 0.02,
+  },
+  class1NICs: {
+    // Source: https://www.gov.uk/national-insurance-rates-letters
+    // Employee Class 1 main rate cut from 10% to 8% effective 6 April 2024.
+    primaryThreshold: 1257000,
+    upperEarningsLimit: 5027000,
+    mainRate: 0.08,
+    upperRate: 0.02,
   }
 };

@@ -30,6 +30,12 @@ export interface TaxRules {
     mainRate: number;
     upperRate: number;
   };
+  class1NICs: {
+    primaryThreshold: number;   // in pence
+    upperEarningsLimit: number; // in pence
+    mainRate: number;
+    upperRate: number;
+  };
   tradingAllowance: number; // in pence
 }
 
@@ -92,6 +98,34 @@ export interface EstimateResult {
   estimatedTotal: number; // in pence
   effectiveRate: number; // percentage (0-100)
   
+  calculationDate: string;
+  ruleVersion: string;
+  warnings: string[];
+}
+
+export interface PayeInput {
+  taxYear: string;
+  taxRegion: TaxRegion;
+  grossSalary: number; // in pence, annual
+}
+
+export interface PayeResult {
+  taxYear: string;
+  grossSalary: number; // in pence
+
+  personalAllowanceUsed: number; // in pence
+  taxableIncome: number; // in pence
+
+  incomeTaxByBand: TaxBandResult[];
+  totalIncomeTax: number; // in pence
+
+  class1NICs: number; // in pence
+
+  netIncome: number; // in pence, annual
+  monthlyNetIncome: number; // in pence
+
+  effectiveRate: number; // percentage (0-100)
+
   calculationDate: string;
   ruleVersion: string;
   warnings: string[];

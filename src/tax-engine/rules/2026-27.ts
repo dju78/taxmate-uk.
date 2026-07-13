@@ -34,5 +34,13 @@ export const rules2026_27: TaxRules = {
     upperProfitsLimit: 5027000,
     mainRate: 0.06,
     upperRate: 0.02,
+  },
+  class1NICs: {
+    // Source: https://www.gov.uk/national-insurance-rates-letters
+    // Assumed unchanged from 2024-25 until confirmed for this year.
+    primaryThreshold: 1257000,
+    upperEarningsLimit: 5027000,
+    mainRate: 0.08,
+    upperRate: 0.02,
   }
 };
