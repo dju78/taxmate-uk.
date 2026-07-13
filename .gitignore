@@ -18,6 +18,10 @@ dist-ssr
 /screenshots/
 /runs.json
 
+# Netlify builds from source on every deploy (see netlify.toml); the local
+# content-hashed bundle is a build artefact and was never tracked here.
+/dist/assets/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
