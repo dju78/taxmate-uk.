@@ -8,9 +8,6 @@ export function generateExplanations(
 ): string[] {
   const warnings: string[] = [];
 
-  // Core assumption warning required by specifications
-  warnings.push("Estimated Income Tax and Class 4 National Insurance based on the information entered.");
-
   if (profitResult.deductionMethodUsed === "trading-allowance") {
     warnings.push(`You are better off using the £${(rules.tradingAllowance / 100).toFixed(0)} Trading Allowance rather than your actual allowable expenses.`);
   }

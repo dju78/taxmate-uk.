@@ -488,7 +488,15 @@ export function ReportsView() {
           className={activeTab === 'tax' ? 'block' : 'hidden print:block print:break-before-page print:mb-8'}
         >
           <h2 className="text-xl font-bold mb-4">Tax estimate preview</h2>
-          
+
+          <div className="mb-6 max-w-2xl">
+            <Alert
+              variant="warning"
+              title="Prototype estimate only"
+              description="This calculation uses the information and assumptions you provide and may not include all income, reliefs, adjustments or individual circumstances. It is not tax advice, is not HMRC-approved and must not be used by itself to complete or file a tax return. Check current GOV.UK guidance or consult a qualified tax professional."
+            />
+          </div>
+
           {!isConfirmed || estimateError ? (
             <div className="bg-white p-6 rounded-xl border border-neutral-200 shadow-sm max-w-2xl print:hidden">
               <h3 className="font-bold text-lg mb-4 text-neutral-900">Tax Profile Details</h3>
