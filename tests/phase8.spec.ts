@@ -374,6 +374,33 @@ test.describe('Phase 8: Comprehensive Playwright E2E Tests', () => {
       await expect(page.locator('span', { hasText: 'Demo Client A' })).not.toBeVisible();
       await expect(page.locator('span', { hasText: 'My Own Client' }).first()).toBeVisible();
     });
+
+    test('diagnostics log records a failed import and can be cleared', async ({ page }) => {
+      await page.getByRole('button', { name: 'Settings' }).click();
+      await expect(page.getByText('No diagnostic entries recorded yet.')).toBeVisible();
+
+      // Trigger a failed import (unreadable file -> IMPORT_FAILURE entry).
+      const fileChooserPromise = page.waitForEvent('filechooser');
+      await page.getByRole('button', { name: 'Import JSON backup…' }).click();
+      const fileChooser = await fileChooserPromise;
+      await fileChooser.setFiles({
+        name: 'invalid.json',
+        mimeType: 'application/json',
+        buffer: Buffer.from('this is not json'),
+      });
+      await expect(page.getByText('This file cannot be imported. Your existing data has not been changed.')).toBeVisible();
+      await page.getByRole('button', { name: 'Cancel' }).click();
+
+      // The entry now appears in Settings' Diagnostics section.
+      await expect(page.getByText('IMPORT_FAILURE')).toBeVisible();
+      await expect(page.getByText(/1 entry/)).toBeVisible();
+
+      // Clear it.
+      await page.getByRole('button', { name: 'Clear log' }).click();
+      await page.getByRole('dialog', { name: 'Clear diagnostic log' }).getByRole('button', { name: 'Clear log' }).click();
+      await expect(page.getByText('No diagnostic entries recorded yet.')).toBeVisible();
+      await expect(page.getByText('IMPORT_FAILURE')).not.toBeVisible();
+    });
   });
 
   test.describe('Accessibility & Layout', () => {

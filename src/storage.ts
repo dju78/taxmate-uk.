@@ -3,6 +3,7 @@
 import type { IncomeRecord, ExpenseRecord, ExpenseCategory, ExportBundle, ExportPreferences, AppPreferences, IncomeCalcRecord, ExpenseCalcRecord } from './types';
 import { isExpenseCategory, LEGACY_EXPENSE_CATEGORY_MAP } from './types';
 import { isValidAmount, isValidDateString } from './validation';
+import { diagnosticsService } from './diagnostics';
 
 // Validate the optional future-ready expense fields at runtime. Returns error
 // strings (empty = valid). `label` prefixes messages, e.g. "expenseRecords[3]".
@@ -130,6 +131,7 @@ const readCollection = <T>(key: string): T[] => {
     return parsed as T[];
   } catch (error) {
     console.error(`Corrupted data in ${key}:`, error);
+    diagnosticsService.logEvent('STORAGE_READ_ERROR', key, 'error');
     try {
       if (raw != null) localStorage.setItem(`${key}_backup_${Date.now()}`, raw);
       localStorage.setItem(
@@ -174,12 +176,17 @@ export const storageService = {
         // misclassify: unmapped values go to "Other business expenses" WITH
         // the original kept for review).
         const expenses = storageService.getExpenseRecords();
+        let changed = false;
         const migrated = expenses.map((r) => {
           if (isExpenseCategory(r.category)) return r;
+          changed = true;
           const { category, legacyCategory } = migrateLegacyExpenseCategory(r.category);
           return { ...r, category, legacyCategory };
         });
-        localStorage.setItem(EXPENSE_STORAGE_KEY, JSON.stringify(migrated));
+        if (changed) {
+          localStorage.setItem(EXPENSE_STORAGE_KEY, JSON.stringify(migrated));
+          diagnosticsService.logEvent('SCHEMA_MIGRATION', 'storage', 'info');
+        }
       }
       localStorage.setItem(SCHEMA_VERSION_KEY, String(SCHEMA_VERSION));
     } catch {

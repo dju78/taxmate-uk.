@@ -2,6 +2,8 @@ import { useRef, useState, type ReactNode } from 'react';
 import { storageService, type ImportValidationResult } from './storage';
 import { useTaxStore, taxYearStartToLabel } from './store';
 import { useDialog } from './hooks';
+import { diagnosticsService } from './diagnostics';
+import { Table } from './components';
 
 function downloadFile(filename: string, content: string, mime: string) {
   const blob = new Blob([content], { type: mime });
@@ -72,7 +74,12 @@ export function DataAndBackup() {
   const [importMode, setImportMode] = useState<ImportMode>('restore');
   const [showClear, setShowClear] = useState(false);
   const [showRemoveDemo, setShowRemoveDemo] = useState(false);
+  const [showClearDiagnostics, setShowClearDiagnostics] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  // Re-read directly from localStorage on every render (mount, and any
+  // re-render triggered by our own export/import/clear actions via flash()) —
+  // this is a debug view, not a live subscription.
+  const diagnosticsEntries = diagnosticsService.getEntries();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const hasDemo = income.some((r) => r.isDemo) || expenses.some((r) => r.isDemo);
@@ -89,8 +96,10 @@ export function DataAndBackup() {
       const bundle = storageService.getExportBundle({ selectedTaxYear });
       downloadFile(`taxmate-backup-${stamp()}.json`, JSON.stringify(bundle, null, 2), 'application/json');
       storageService.recordSuccessfulExport();
+      diagnosticsService.logEvent('EXPORT_SUCCESS', 'export', 'info');
       flash('JSON backup exported successfully.');
     } catch {
+      diagnosticsService.logEvent('EXPORT_FAILURE', 'export', 'error');
       flash('JSON export failed. Your existing data was not changed.');
     }
   };
@@ -102,8 +111,10 @@ export function DataAndBackup() {
       const exp = storageService.recordsToCSV(storageService.getExpensesInTaxYear(expenses, taxRef));
       downloadFile(`taxmate-income-${yearTag}-${stamp()}.csv`, inc || 'No income records', 'text/csv');
       downloadFile(`taxmate-expenses-${yearTag}-${stamp()}.csv`, exp || 'No expense records', 'text/csv');
+      diagnosticsService.logEvent('EXPORT_SUCCESS', 'export', 'info');
       flash('CSV export completed successfully.');
     } catch {
+      diagnosticsService.logEvent('EXPORT_FAILURE', 'export', 'error');
       flash('CSV export failed. Your existing data was not changed.');
     }
   };
@@ -115,8 +126,11 @@ export function DataAndBackup() {
     setImportMode('restore');
     try {
       const text = await file.text();
-      setPreview(storageService.parseImportText(text));
+      const result = storageService.parseImportText(text);
+      if (!result.ok) diagnosticsService.logEvent('IMPORT_FAILURE', 'import', 'warning');
+      setPreview(result);
     } catch {
+      diagnosticsService.logEvent('IMPORT_FAILURE', 'import', 'error');
       setPreview({
         ok: false,
         errors: ['The file could not be read. Please try again with a different file.'],
@@ -129,13 +143,20 @@ export function DataAndBackup() {
 
   const confirmImport = () => {
     if (!preview || !preview.ok) return;
-    const result =
-      importMode === 'restore'
-        ? restoreImport(preview.income, preview.expenses, preview.preferences)
-        : mergeImport(preview.income, preview.expenses);
-    const verb = importMode === 'restore' ? 'Restored' : 'Merged';
-    setPreview(null);
-    flash(`${verb} ${result.income} income and ${result.expenses} expense record(s).`);
+    try {
+      const result =
+        importMode === 'restore'
+          ? restoreImport(preview.income, preview.expenses, preview.preferences)
+          : mergeImport(preview.income, preview.expenses);
+      const verb = importMode === 'restore' ? 'Restored' : 'Merged';
+      diagnosticsService.logEvent('IMPORT_SUCCESS', 'import', 'info');
+      setPreview(null);
+      flash(`${verb} ${result.income} income and ${result.expenses} expense record(s).`);
+    } catch {
+      diagnosticsService.logEvent('IMPORT_FAILURE', 'import', 'error');
+      setPreview(null);
+      flash('Import failed. Your existing data was not changed.');
+    }
   };
 
   const confirmClear = () => {
@@ -148,6 +169,17 @@ export function DataAndBackup() {
     const r = removeDemo();
     setShowRemoveDemo(false);
     flash(`Removed ${r.income} demo income and ${r.expenses} demo expense record(s). Your records were kept.`);
+  };
+
+  const handleExportDiagnostics = () => {
+    downloadFile(`taxmate-diagnostic-log-${stamp()}.json`, diagnosticsService.exportAsJSON(), 'application/json');
+    flash('Diagnostic log exported successfully.');
+  };
+
+  const confirmClearDiagnostics = () => {
+    diagnosticsService.clearLog();
+    setShowClearDiagnostics(false);
+    flash('Diagnostic log cleared.');
   };
 
   const prefYear =
@@ -224,6 +256,55 @@ export function DataAndBackup() {
             Demo records are labelled “Demo”, dated in the selected tax year, and can be removed
             without affecting your own records.
           </p>
+        </div>
+
+        <div className="border-t border-neutral-200 pt-4">
+          <h3 className="mb-2 text-sm font-semibold text-neutral-700">Diagnostics</h3>
+          <p className="mb-2 text-xs text-neutral-500">
+            A local, technical log of import/export outcomes and storage events — kept only in this
+            browser, never included in your backup export, used purely to help debug problems.
+          </p>
+          {diagnosticsEntries.length === 0 ? (
+            <p className="text-sm text-neutral-500">No diagnostic entries recorded yet.</p>
+          ) : (
+            <>
+              <p className="mb-2 text-xs text-neutral-500">
+                {diagnosticsEntries.length} entr{diagnosticsEntries.length === 1 ? 'y' : 'ies'} (most recent 100 kept)
+              </p>
+              <div className="max-h-56 overflow-y-auto rounded-lg border border-neutral-200">
+                <Table
+                  columns={['Time', 'Code', 'Feature', 'Severity']}
+                  rows={diagnosticsEntries
+                    .slice()
+                    .reverse()
+                    .map((e) => [
+                      new Date(e.timestamp).toLocaleString('en-GB'),
+                      e.code,
+                      e.feature,
+                      e.severity,
+                    ])}
+                />
+              </div>
+            </>
+          )}
+          <div className="mt-3 flex flex-wrap gap-3">
+            <button
+              type="button"
+              className={btnSecondary}
+              onClick={handleExportDiagnostics}
+              disabled={diagnosticsEntries.length === 0}
+            >
+              Export log
+            </button>
+            <button
+              type="button"
+              className={btnSecondary}
+              onClick={() => setShowClearDiagnostics(true)}
+              disabled={diagnosticsEntries.length === 0}
+            >
+              Clear log
+            </button>
+          </div>
         </div>
 
         <div className="border-t border-neutral-200 pt-4">
@@ -331,6 +412,22 @@ export function DataAndBackup() {
           </button>
           <button type="button" className={btnPrimary} onClick={confirmImport} disabled={!preview?.ok}>
             {importMode === 'restore' ? 'Restore' : 'Merge'}
+          </button>
+        </div>
+      </Dialog>
+
+      {/* Clear diagnostics confirm */}
+      <Dialog open={showClearDiagnostics} onClose={() => setShowClearDiagnostics(false)} title="Clear diagnostic log">
+        <p className="text-sm text-neutral-700">
+          This removes the {diagnosticsEntries.length} local diagnostic entr{diagnosticsEntries.length === 1 ? 'y' : 'ies'} only.
+          Your income, expense and preference records are not affected.
+        </p>
+        <div className="mt-6 flex justify-end gap-3">
+          <button type="button" className={btnGhost} onClick={() => setShowClearDiagnostics(false)}>
+            Cancel
+          </button>
+          <button type="button" className={btnDanger} onClick={confirmClearDiagnostics}>
+            Clear log
           </button>
         </div>
       </Dialog>

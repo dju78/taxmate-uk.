@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { diagnosticsService } from './diagnostics';
+import { storageService } from './storage';
 
 beforeEach(() => localStorage.clear());
 
@@ -52,5 +53,34 @@ describe('diagnosticsService', () => {
     const parsed = JSON.parse(json);
     expect(parsed.entries).toHaveLength(1);
     expect(parsed.entries[0].code).toBe('EXPORT_SUCCESS');
+  });
+
+  it('migrateIfNeeded does not log SCHEMA_MIGRATION on a brand-new browser with nothing to migrate', () => {
+    // No taxmate_schema_version key and no expense records at all — this is
+    // the state of every genuinely fresh install, not an actual migration.
+    storageService.migrateIfNeeded();
+    expect(diagnosticsService.getEntries()).toEqual([]);
+  });
+
+  it('migrateIfNeeded logs SCHEMA_MIGRATION only when a legacy category is actually remapped', () => {
+    localStorage.setItem(
+      'taxmate_expense_records',
+      JSON.stringify([{ id: 'l1', date: '2026-05-01', merchant: 'PaperCo', category: 'Supplies', amount: '5' }])
+    );
+    localStorage.setItem('taxmate_schema_version', '1');
+    storageService.migrateIfNeeded();
+    const entries = diagnosticsService.getEntries();
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({ code: 'SCHEMA_MIGRATION', feature: 'storage', severity: 'info' });
+  });
+
+  it('is never included in the user-facing backup/export bundle', () => {
+    diagnosticsService.logEvent('IMPORT_FAILURE', 'import', 'error');
+    diagnosticsService.logEvent('EXPORT_SUCCESS', 'export');
+    const bundle = storageService.getExportBundle({});
+    const serialised = JSON.stringify(bundle);
+    expect(serialised).not.toContain('taxmate_diagnostic_log');
+    expect(serialised).not.toContain('IMPORT_FAILURE');
+    expect(Object.keys(bundle)).not.toContain('diagnostics');
   });
 });

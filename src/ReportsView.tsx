@@ -4,6 +4,7 @@ import { storageService } from './storage';
 import { TOKENS } from './tokens';
 import { Alert } from './components';
 import { useBreakpoint } from './hooks';
+import { diagnosticsService } from './diagnostics';
 import type { IncomeRecord, ExpenseRecord } from './types';
 
 type ReportTab = 'summary' | 'income' | 'expenses' | 'tax' | 'past';
@@ -96,8 +97,10 @@ export function ReportsView() {
       const bundle = storageService.getExportBundle({ selectedTaxYear });
       downloadFile(`taxmate-backup-${stamp()}.json`, JSON.stringify(bundle, null, 2), 'application/json');
       storageService.recordSuccessfulExport();
+      diagnosticsService.logEvent('EXPORT_SUCCESS', 'export', 'info');
       flash('JSON backup exported successfully.');
     } catch {
+      diagnosticsService.logEvent('EXPORT_FAILURE', 'export', 'error');
       flash('JSON export failed. Your existing data was not changed.');
     }
   };
@@ -106,8 +109,10 @@ export function ReportsView() {
       const yearTag = taxYearLabel.replace('/', '-');
       const inc = storageService.recordsToCSV(incomeInYear);
       downloadFile(`taxmate-income-${yearTag}-${stamp()}.csv`, inc || 'No income records', 'text/csv');
+      diagnosticsService.logEvent('EXPORT_SUCCESS', 'export', 'info');
       flash('Income CSV exported successfully.');
     } catch {
+      diagnosticsService.logEvent('EXPORT_FAILURE', 'export', 'error');
       flash('Income CSV export failed. Your existing data was not changed.');
     }
   };
@@ -116,8 +121,10 @@ export function ReportsView() {
       const yearTag = taxYearLabel.replace('/', '-');
       const exp = storageService.recordsToCSV(expensesInYear);
       downloadFile(`taxmate-expenses-${yearTag}-${stamp()}.csv`, exp || 'No expense records', 'text/csv');
+      diagnosticsService.logEvent('EXPORT_SUCCESS', 'export', 'info');
       flash('Expense CSV exported successfully.');
     } catch {
+      diagnosticsService.logEvent('EXPORT_FAILURE', 'export', 'error');
       flash('Expense CSV export failed. Your existing data was not changed.');
     }
   };
@@ -126,8 +133,10 @@ export function ReportsView() {
       const yearTag = taxYearLabel.replace('/', '-');
       const summary = `Metric,Value\nIncome Received,${receivedYTD.toFixed(2)}\nOutstanding Income,${pendingIncome.toFixed(2)}\nOverdue Income,${overdueIncome.toFixed(2)}\nRecorded Expenses,${expensesYTD.toFixed(2)}\nRecorded Cash Surplus,${netProfitYTD.toFixed(2)}\nIncome Transaction Count,${incomeInYear.length}\nExpense Transaction Count,${expensesInYear.length}`;
       downloadFile(`taxmate-summary-${yearTag}-${stamp()}.csv`, summary, 'text/csv');
+      diagnosticsService.logEvent('EXPORT_SUCCESS', 'export', 'info');
       flash('Summary CSV exported successfully.');
     } catch {
+      diagnosticsService.logEvent('EXPORT_FAILURE', 'export', 'error');
       flash('Summary CSV export failed. Your existing data was not changed.');
     }
   };
