@@ -62,7 +62,7 @@ describe('ReportsView reconciliation', () => {
     useTaxStore.getState().setSelectedTaxYear(year);
 
     render(<ReportsView />);
-    fireEvent.click(screen.getByRole('button', { name: 'Past Years' }));
+    fireEvent.click(screen.getByRole('tab', { name: 'Past Years' }));
 
     const priorYearHeading = screen.getByText(`${year - 1}/${String(year % 100).padStart(2, '0')}`);
     const card = priorYearHeading.closest('div.rounded-xl') as HTMLElement;
@@ -78,5 +78,73 @@ describe('ReportsView reconciliation', () => {
     fireEvent.click(within(card).getByRole('button', { name: 'Open report →' }));
     expect(useTaxStore.getState().selectedTaxYear).toBe(year - 1);
     expect(useTaxStore.getState().income).toHaveLength(2);
+  });
+});
+
+describe('ReportsView accessible tablist', () => {
+  it('exposes a tablist with correctly wired aria-selected and aria-controls/id', () => {
+    render(<ReportsView />);
+
+    const tablist = screen.getByRole('tablist', { name: 'Report sections' });
+    const tabs = within(tablist).getAllByRole('tab');
+    expect(tabs.map((t) => t.textContent)).toEqual(['Summary', 'Income', 'Expenses', 'Tax Preview', 'Past Years']);
+
+    const summaryTab = screen.getByRole('tab', { name: 'Summary' });
+    expect(summaryTab.getAttribute('aria-selected')).toBe('true');
+    expect(summaryTab.getAttribute('tabIndex')).toBe('0');
+    tabs.filter((t) => t !== summaryTab).forEach((t) => {
+      expect(t.getAttribute('aria-selected')).toBe('false');
+      expect(t.getAttribute('tabIndex')).toBe('-1');
+    });
+
+    const incomeTab = screen.getByRole('tab', { name: 'Income' });
+    const controlledPanelId = incomeTab.getAttribute('aria-controls');
+    const panel = document.getElementById(controlledPanelId as string);
+    expect(panel).toBeTruthy();
+    expect(panel?.getAttribute('role')).toBe('tabpanel');
+    expect(panel?.getAttribute('aria-labelledby')).toBe(incomeTab.id);
+  });
+
+  it('clicking a tab updates aria-selected and shows the corresponding panel', () => {
+    render(<ReportsView />);
+    fireEvent.click(screen.getByRole('tab', { name: 'Expenses' }));
+
+    expect(screen.getByRole('tab', { name: 'Expenses' }).getAttribute('aria-selected')).toBe('true');
+    expect(screen.getByRole('tab', { name: 'Summary' }).getAttribute('aria-selected')).toBe('false');
+    expect(screen.getByRole('tabpanel', { name: 'Expenses' })).toBeTruthy();
+  });
+
+  it('ArrowRight/ArrowLeft move focus and activation between tabs, wrapping at the ends', () => {
+    render(<ReportsView />);
+    const summaryTab = screen.getByRole('tab', { name: 'Summary' });
+    summaryTab.focus();
+
+    fireEvent.keyDown(summaryTab, { key: 'ArrowRight' });
+    const incomeTab = screen.getByRole('tab', { name: 'Income' });
+    expect(document.activeElement).toBe(incomeTab);
+    expect(incomeTab.getAttribute('aria-selected')).toBe('true');
+
+    fireEvent.keyDown(incomeTab, { key: 'ArrowLeft' });
+    expect(document.activeElement).toBe(summaryTab);
+    expect(summaryTab.getAttribute('aria-selected')).toBe('true');
+
+    // Wraps from the first tab back to the last on ArrowLeft.
+    fireEvent.keyDown(summaryTab, { key: 'ArrowLeft' });
+    const pastTab = screen.getByRole('tab', { name: 'Past Years' });
+    expect(document.activeElement).toBe(pastTab);
+    expect(pastTab.getAttribute('aria-selected')).toBe('true');
+  });
+
+  it('Home/End jump to the first/last tab', () => {
+    render(<ReportsView />);
+    const summaryTab = screen.getByRole('tab', { name: 'Summary' });
+    summaryTab.focus();
+
+    fireEvent.keyDown(summaryTab, { key: 'End' });
+    const pastTab = screen.getByRole('tab', { name: 'Past Years' });
+    expect(document.activeElement).toBe(pastTab);
+
+    fireEvent.keyDown(pastTab, { key: 'Home' });
+    expect(document.activeElement).toBe(summaryTab);
   });
 });

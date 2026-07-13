@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTaxStore, taxYearStartToLabel, taxYearReferenceDate, getAvailableTaxYears } from './store';
 import { storageService } from './storage';
 import { TOKENS } from './tokens';
@@ -6,6 +6,14 @@ import { Alert } from './components';
 import type { IncomeRecord, ExpenseRecord } from './types';
 
 type ReportTab = 'summary' | 'income' | 'expenses' | 'tax' | 'past';
+
+const REPORT_TABS: { id: ReportTab; label: string }[] = [
+  { id: 'summary', label: 'Summary' },
+  { id: 'income', label: 'Income' },
+  { id: 'expenses', label: 'Expenses' },
+  { id: 'tax', label: 'Tax Preview' },
+  { id: 'past', label: 'Past Years' },
+];
 
 function downloadFile(filename: string, content: string, mime: string) {
   const blob = new Blob([content], { type: mime });
@@ -26,6 +34,7 @@ export function ReportsView() {
   const expenseRecords = useTaxStore((s) => s.expenses);
 
   const [activeTab, setActiveTab] = useState<ReportTab>('summary');
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const [message, setMessage] = useState<string | null>(null);
   const flash = (m: string) => {
     setMessage(m);
@@ -123,6 +132,32 @@ export function ReportsView() {
 
   const pastYears = getAvailableTaxYears().filter(y => y !== selectedTaxYear);
 
+  // Standard ARIA tabs roving-tabindex pattern: arrow keys move focus AND
+  // activate the tab immediately (automatic activation), matching the
+  // existing single-click activation model these tabs already use.
+  const onTabKeyDown = (e: React.KeyboardEvent, index: number) => {
+    let nextIndex: number;
+    switch (e.key) {
+      case 'ArrowRight':
+        nextIndex = (index + 1) % REPORT_TABS.length;
+        break;
+      case 'ArrowLeft':
+        nextIndex = (index - 1 + REPORT_TABS.length) % REPORT_TABS.length;
+        break;
+      case 'Home':
+        nextIndex = 0;
+        break;
+      case 'End':
+        nextIndex = REPORT_TABS.length - 1;
+        break;
+      default:
+        return;
+    }
+    e.preventDefault();
+    setActiveTab(REPORT_TABS[nextIndex].id);
+    tabRefs.current[nextIndex]?.focus();
+  };
+
   return (
     <div className="reports-view">
       <div className="mb-8 print:hidden">
@@ -144,18 +179,21 @@ export function ReportsView() {
 
       {/* Tabs and Print Button */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b border-neutral-200 pb-2 print:hidden">
-        <div className="flex flex-wrap gap-2">
-          {(['summary', 'income', 'expenses', 'tax', 'past'] as ReportTab[]).map(tab => (
+        <div role="tablist" aria-label="Report sections" className="flex flex-wrap gap-2">
+          {REPORT_TABS.map((tab, index) => (
             <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 text-sm font-semibold rounded-t-lg ${activeTab === tab ? 'bg-neutral-100 text-neutral-900 border-b-2 border-green-600' : 'text-neutral-500 hover:text-neutral-700'}`}
+              key={tab.id}
+              ref={(el) => { tabRefs.current[index] = el; }}
+              role="tab"
+              id={`report-tab-${tab.id}`}
+              aria-selected={activeTab === tab.id}
+              aria-controls={`report-panel-${tab.id}`}
+              tabIndex={activeTab === tab.id ? 0 : -1}
+              onClick={() => setActiveTab(tab.id)}
+              onKeyDown={(e) => onTabKeyDown(e, index)}
+              className={`px-4 py-2 text-sm font-semibold rounded-t-lg ${activeTab === tab.id ? 'bg-neutral-100 text-neutral-900 border-b-2 border-green-600' : 'text-neutral-500 hover:text-neutral-700'}`}
             >
-              {tab === 'summary' && 'Summary'}
-              {tab === 'income' && 'Income'}
-              {tab === 'expenses' && 'Expenses'}
-              {tab === 'tax' && 'Tax Preview'}
-              {tab === 'past' && 'Past Years'}
+              {tab.label}
             </button>
           ))}
         </div>
@@ -180,7 +218,13 @@ export function ReportsView() {
         </div>
 
         {/* SUMMARY TAB */}
-        <div className={activeTab === 'summary' ? 'block' : 'hidden print:block print:mb-8'}>
+        <div
+          role="tabpanel"
+          id="report-panel-summary"
+          aria-labelledby="report-tab-summary"
+          tabIndex={0}
+          className={activeTab === 'summary' ? 'block' : 'hidden print:block print:mb-8'}
+        >
           <div className="flex items-center justify-between mb-4 print:hidden">
             <h2 className="text-xl font-bold">Tax-year summary</h2>
             <div className="flex gap-2">
@@ -249,7 +293,13 @@ export function ReportsView() {
         </div>
 
         {/* INCOME TAB */}
-        <div className={activeTab === 'income' ? 'block' : 'hidden print:block print:break-before-page print:mb-8'}>
+        <div
+          role="tabpanel"
+          id="report-panel-income"
+          aria-labelledby="report-tab-income"
+          tabIndex={0}
+          className={activeTab === 'income' ? 'block' : 'hidden print:block print:break-before-page print:mb-8'}
+        >
           <div className="flex items-center justify-between mb-4 print:hidden">
             <h2 className="text-xl font-bold">Income status</h2>
             <button onClick={handleExportIncomeCSV} className="text-sm px-3 py-1 bg-white border border-neutral-300 rounded hover:bg-neutral-50">CSV Export</button>
@@ -305,7 +355,13 @@ export function ReportsView() {
         </div>
 
         {/* EXPENSES TAB */}
-        <div className={activeTab === 'expenses' ? 'block' : 'hidden print:block print:break-before-page print:mb-8'}>
+        <div
+          role="tabpanel"
+          id="report-panel-expenses"
+          aria-labelledby="report-tab-expenses"
+          tabIndex={0}
+          className={activeTab === 'expenses' ? 'block' : 'hidden print:block print:break-before-page print:mb-8'}
+        >
           <div className="flex items-center justify-between mb-4 print:hidden">
             <h2 className="text-xl font-bold">Expense breakdown</h2>
             <button onClick={handleExportExpenseCSV} className="text-sm px-3 py-1 bg-white border border-neutral-300 rounded hover:bg-neutral-50">CSV Export</button>
@@ -359,7 +415,13 @@ export function ReportsView() {
         </div>
 
         {/* TAX PREVIEW TAB */}
-        <div className={activeTab === 'tax' ? 'block' : 'hidden print:block print:break-before-page print:mb-8'}>
+        <div
+          role="tabpanel"
+          id="report-panel-tax"
+          aria-labelledby="report-tab-tax"
+          tabIndex={0}
+          className={activeTab === 'tax' ? 'block' : 'hidden print:block print:break-before-page print:mb-8'}
+        >
           <h2 className="text-xl font-bold mb-4">Tax estimate preview</h2>
           <Alert
             variant="warning"
@@ -389,7 +451,13 @@ export function ReportsView() {
         </div>
 
         {/* PAST YEARS TAB */}
-        <div className={activeTab === 'past' ? 'block' : 'hidden print:block print:break-before-page'}>
+        <div
+          role="tabpanel"
+          id="report-panel-past"
+          aria-labelledby="report-tab-past"
+          tabIndex={0}
+          className={activeTab === 'past' ? 'block' : 'hidden print:block print:break-before-page'}
+        >
           <h2 className="text-xl font-bold mb-4">Past Tax Years Summary</h2>
           {pastYears.length > 0 ? pastYears.map(year => {
             const yrRef = storageService.getTaxYearStartForYear(year);
