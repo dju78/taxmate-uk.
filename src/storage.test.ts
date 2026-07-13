@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { storageService, INCOME_STATUS } from './storage';
 import { isValidAmount, isValidDateString } from './validation';
 
@@ -529,5 +529,192 @@ describe('Phase 2: selected tax year controls calculations', () => {
     expect(storageService.calculateIncomeThisMonthForYear(2024, income, today)).toBeNull();
     // no received income dated in July 2026 -> 0 for the current year
     expect(storageService.calculateIncomeThisMonthForYear(2026, income, today)).toBe(0);
+  });
+});
+
+describe('findDuplicateIncome / findDuplicateExpense', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('flags a duplicate matching date, amount, source and description', () => {
+    const existing = storageService.addIncomeRecord({
+      date: '2026-05-01',
+      source: 'Acme Ltd',
+      description: 'Invoice 1',
+      category: 'Freelance',
+      amount: '250.00',
+      status: 'received',
+    });
+    const match = storageService.findDuplicateIncome({
+      date: '2026-05-01',
+      source: '  acme ltd  ',
+      description: 'invoice 1',
+      category: 'Freelance',
+      amount: '250.00',
+    });
+    expect(match?.id).toBe(existing.id);
+  });
+
+  it('does not flag records differing in date, amount or source', () => {
+    storageService.addIncomeRecord({
+      date: '2026-05-01',
+      source: 'Acme Ltd',
+      description: 'Invoice 1',
+      category: 'Freelance',
+      amount: '250.00',
+      status: 'received',
+    });
+    expect(
+      storageService.findDuplicateIncome({ date: '2026-05-02', source: 'Acme Ltd', description: 'Invoice 1', amount: '250.00' })
+    ).toBeUndefined();
+    expect(
+      storageService.findDuplicateIncome({ date: '2026-05-01', source: 'Acme Ltd', description: 'Invoice 1', amount: '99.00' })
+    ).toBeUndefined();
+    expect(
+      storageService.findDuplicateIncome({ date: '2026-05-01', source: 'Other Ltd', description: 'Invoice 1', amount: '250.00' })
+    ).toBeUndefined();
+  });
+
+  it('excludes the record itself when editing (excludeId)', () => {
+    const existing = storageService.addIncomeRecord({
+      date: '2026-05-01',
+      source: 'Acme Ltd',
+      description: 'Invoice 1',
+      category: 'Freelance',
+      amount: '250.00',
+      status: 'received',
+    });
+    const match = storageService.findDuplicateIncome(
+      { date: '2026-05-01', source: 'Acme Ltd', description: 'Invoice 1', amount: '250.00' },
+      existing.id
+    );
+    expect(match).toBeUndefined();
+  });
+
+  it('flags a duplicate expense matching date, amount, merchant and description', () => {
+    const existing = storageService.addExpenseRecord({
+      date: '2026-05-03',
+      merchant: 'Amazon',
+      description: 'Office chair',
+      category: 'Office costs',
+      amount: '89.99',
+    });
+    const match = storageService.findDuplicateExpense({
+      date: '2026-05-03',
+      merchant: 'amazon',
+      description: 'Office Chair',
+      category: 'Office costs',
+      amount: '89.99',
+    });
+    expect(match?.id).toBe(existing.id);
+  });
+
+  it('excludes the expense itself when editing (excludeId)', () => {
+    const existing = storageService.addExpenseRecord({
+      date: '2026-05-03',
+      merchant: 'Amazon',
+      description: 'Office chair',
+      category: 'Office costs',
+      amount: '89.99',
+    });
+    expect(
+      storageService.findDuplicateExpense(
+        { date: '2026-05-03', merchant: 'Amazon', description: 'Office chair', amount: '89.99' },
+        existing.id
+      )
+    ).toBeUndefined();
+  });
+});
+
+describe('shouldShowBackupReminder / snoozeBackupReminder / recordSuccessfulExport', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('does not trigger below the 10-record threshold with no prior export', () => {
+    const income = Array.from({ length: 5 }, () => ({ isDemo: false }));
+    const expenses = Array.from({ length: 4 }, () => ({ isDemo: false }));
+    expect(storageService.shouldShowBackupReminder(income, expenses)).toBe(false);
+  });
+
+  it('triggers at 10+ non-demo records with no prior export', () => {
+    const income = Array.from({ length: 6 }, () => ({ isDemo: false }));
+    const expenses = Array.from({ length: 4 }, () => ({ isDemo: false }));
+    expect(storageService.shouldShowBackupReminder(income, expenses)).toBe(true);
+  });
+
+  it('excludes demo records from the threshold count', () => {
+    const income = Array.from({ length: 8 }, () => ({ isDemo: true }));
+    const expenses = Array.from({ length: 8 }, () => ({ isDemo: true }));
+    expect(storageService.shouldShowBackupReminder(income, expenses)).toBe(false);
+  });
+
+  it('does not trigger again within 30 days of a successful export', () => {
+    const income = Array.from({ length: 20 }, () => ({ isDemo: false }));
+    const now = new Date(2026, 5, 1);
+    storageService.recordSuccessfulExport(new Date(2026, 4, 15));
+    expect(storageService.shouldShowBackupReminder(income, [], now)).toBe(false);
+  });
+
+  it('triggers again more than 30 days after the last successful export', () => {
+    const income = Array.from({ length: 20 }, () => ({ isDemo: false }));
+    const now = new Date(2026, 6, 1);
+    storageService.recordSuccessfulExport(new Date(2026, 4, 1));
+    expect(storageService.shouldShowBackupReminder(income, [], now)).toBe(true);
+  });
+
+  it('snoozing suppresses the reminder until the snooze period elapses', () => {
+    const income = Array.from({ length: 20 }, () => ({ isDemo: false }));
+    const snoozedAt = new Date(2026, 5, 1);
+    storageService.snoozeBackupReminder(7, snoozedAt);
+    expect(storageService.shouldShowBackupReminder(income, [], new Date(2026, 5, 3))).toBe(false);
+    expect(storageService.shouldShowBackupReminder(income, [], new Date(2026, 5, 9))).toBe(true);
+  });
+});
+
+describe('previewImport', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('restore mode reports full add counts and existing records to replace', () => {
+    storageService.addIncomeRecord({ date: '2026-05-01', source: 'A', category: 'Freelance', amount: '10', status: 'received' });
+    storageService.addExpenseRecord({ date: '2026-05-01', merchant: 'B', category: 'Office costs', amount: '5' });
+    const preview = storageService.previewImport(
+      'restore',
+      [{ id: '1', date: '2026-05-01', source: 'X', category: 'Freelance', amount: '1', status: 'received' }],
+      [{ id: '2', date: '2026-05-01', merchant: 'Y', category: 'Office costs', amount: '2' }]
+    );
+    expect(preview).toEqual({
+      toAddIncome: 1,
+      toSkipIncome: 0,
+      probableDuplicateIncome: 0,
+      toAddExpenses: 1,
+      toSkipExpenses: 0,
+      probableDuplicateExpenses: 0,
+      toReplace: 2,
+    });
+  });
+
+  it('merge mode skips exact-id matches and flags content-matching records as probable duplicates', () => {
+    const existingIncome = storageService.addIncomeRecord({
+      date: '2026-05-01',
+      source: 'Acme Ltd',
+      description: 'Invoice 1',
+      category: 'Freelance',
+      amount: '250.00',
+      status: 'received',
+    });
+    const preview = storageService.previewImport(
+      'merge',
+      [
+        // exact id match -> skipped
+        { ...existingIncome },
+        // different id, same content -> probable duplicate (still added)
+        { id: 'new-id', date: '2026-05-01', source: 'Acme Ltd', description: 'Invoice 1', category: 'Freelance', amount: '250.00', status: 'received' },
+        // genuinely new record
+        { id: 'brand-new', date: '2026-06-01', source: 'Other', category: 'Freelance', amount: '75', status: 'received' },
+      ],
+      []
+    );
+    expect(preview.toSkipIncome).toBe(1);
+    expect(preview.toAddIncome).toBe(2);
+    expect(preview.probableDuplicateIncome).toBe(1);
+    expect(preview.toReplace).toBe(0);
   });
 });

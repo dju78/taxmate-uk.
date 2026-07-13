@@ -8,6 +8,10 @@ import {
   hasInvalidDateRange,
   defaultIncomeFilters,
   defaultExpenseFilters,
+  searchIncomeRecords,
+  searchExpenseRecords,
+  sortIncomeRecords,
+  sortExpenseRecords,
 } from './filters';
 
 const income = [
@@ -115,5 +119,109 @@ describe('invalid date range does not empty the ledger', () => {
 describe('uniqueSorted', () => {
   it('returns unique, sorted, non-empty values', () => {
     expect(uniqueSorted(['Beta', 'Alpha', 'Alpha', undefined, ''])).toEqual(['Alpha', 'Beta']);
+  });
+});
+
+describe('search: normalisation and field coverage', () => {
+  const incomeRecords = [
+    { id: '1', date: '2026-05-01', source: 'Café Roma', description: 'Consulting', category: 'Client work', notes: 'VIP client', status: 'received' },
+    { id: '2', date: '2026-05-02', source: 'Acme Ltd', description: 'Website build', category: 'Freelance', notes: '', status: 'pending' },
+    { id: '3', date: '2026-05-03', source: 'Beta Co', description: '', category: 'Other', notes: 'urgent overdue chase', status: 'overdue' },
+  ];
+
+  it('is case-insensitive', () => {
+    expect(searchIncomeRecords(incomeRecords, 'ACME').map((r) => r.id)).toEqual(['2']);
+  });
+
+  it('trims surrounding whitespace from the query', () => {
+    expect(searchIncomeRecords(incomeRecords, '  acme  ').map((r) => r.id)).toEqual(['2']);
+  });
+
+  it('is accent-tolerant (matches "cafe" against "Café")', () => {
+    expect(searchIncomeRecords(incomeRecords, 'cafe').map((r) => r.id)).toEqual(['1']);
+  });
+
+  it('matches income by source, description, category, notes and status', () => {
+    expect(searchIncomeRecords(incomeRecords, 'Consulting').map((r) => r.id)).toEqual(['1']);
+    expect(searchIncomeRecords(incomeRecords, 'Website build').map((r) => r.id)).toEqual(['2']);
+    expect(searchIncomeRecords(incomeRecords, 'Freelance').map((r) => r.id)).toEqual(['2']);
+    expect(searchIncomeRecords(incomeRecords, 'urgent').map((r) => r.id)).toEqual(['3']);
+    expect(searchIncomeRecords(incomeRecords, 'overdue').map((r) => r.id)).toEqual(['3']);
+  });
+
+  it('an empty/blank query returns every record unfiltered', () => {
+    expect(searchIncomeRecords(incomeRecords, '')).toHaveLength(3);
+    expect(searchIncomeRecords(incomeRecords, '   ')).toHaveLength(3);
+  });
+
+  const expenseRecords = [
+    { id: 'e1', date: '2026-05-01', merchant: 'Amazôn', description: 'Office chair', category: 'Office costs', notes: '', paymentMethod: 'Card' },
+    { id: 'e2', date: '2026-05-02', merchant: 'Rail Co', description: '', category: 'Travel', notes: 'client visit', paymentMethod: 'Bank Transfer' },
+  ];
+
+  it('matches expenses by merchant, description, category, notes and payment method', () => {
+    expect(searchExpenseRecords(expenseRecords, 'amazon').map((r) => r.id)).toEqual(['e1']);
+    expect(searchExpenseRecords(expenseRecords, 'chair').map((r) => r.id)).toEqual(['e1']);
+    expect(searchExpenseRecords(expenseRecords, 'travel').map((r) => r.id)).toEqual(['e2']);
+    expect(searchExpenseRecords(expenseRecords, 'client visit').map((r) => r.id)).toEqual(['e2']);
+    expect(searchExpenseRecords(expenseRecords, 'bank transfer').map((r) => r.id)).toEqual(['e2']);
+  });
+});
+
+describe('sort: stability and correctness', () => {
+  const incomeRecords = [
+    { id: 'b', date: '2026-05-10', amount: '100', source: 'Beta', status: 'pending' },
+    { id: 'a', date: '2026-05-10', amount: '100', source: 'Alpha', status: 'overdue' }, // same date+amount as 'b'
+    { id: 'c', date: '2026-06-01', amount: '300', source: 'Gamma', status: 'received' },
+  ];
+
+  it('sorts by date descending, newest first', () => {
+    // 'a' and 'b' share the same date and amount, so the stable tie-breaker
+    // (ascending id) resolves the order between them: 'a' before 'b'.
+    expect(sortIncomeRecords(incomeRecords, 'date-desc').map((r) => r.id)).toEqual(['c', 'a', 'b']);
+  });
+
+  it('sorts by date ascending', () => {
+    expect(sortIncomeRecords(incomeRecords, 'date-asc').map((r) => r.id)).toEqual(['a', 'b', 'c']);
+  });
+
+  it('sorts by amount descending/ascending', () => {
+    expect(sortIncomeRecords(incomeRecords, 'amount-desc').map((r) => r.id)).toEqual(['c', 'a', 'b']);
+    expect(sortIncomeRecords(incomeRecords, 'amount-asc').map((r) => r.id)).toEqual(['a', 'b', 'c']);
+  });
+
+  it('sorts by source alphabetically (asc/desc)', () => {
+    expect(sortIncomeRecords(incomeRecords, 'source-asc').map((r) => r.id)).toEqual(['a', 'b', 'c']);
+    expect(sortIncomeRecords(incomeRecords, 'source-desc').map((r) => r.id)).toEqual(['c', 'b', 'a']);
+  });
+
+  it('sorts overdue-first by status priority', () => {
+    expect(sortIncomeRecords(incomeRecords, 'status-overdue').map((r) => r.id)).toEqual(['a', 'b', 'c']);
+  });
+
+  it('is a STABLE tie-break (same date+amount resolves by id, not input order)', () => {
+    // 'a' and 'b' share date+amount; the tie-breaker must resolve deterministically
+    // by id regardless of which order they appear in the input array.
+    const reversedInput = [incomeRecords[2], incomeRecords[0], incomeRecords[1]];
+    const r1 = sortIncomeRecords(incomeRecords, 'date-desc').map((r) => r.id);
+    const r2 = sortIncomeRecords(reversedInput, 'date-desc').map((r) => r.id);
+    expect(r1).toEqual(r2);
+  });
+
+  it('does not mutate the input array', () => {
+    const copy = [...incomeRecords];
+    sortIncomeRecords(incomeRecords, 'date-asc');
+    expect(incomeRecords).toEqual(copy);
+  });
+
+  const expenseRecords = [
+    { id: 'x', date: '2026-05-01', amount: '50', merchant: 'Zeta', category: 'Travel' },
+    { id: 'y', date: '2026-06-01', amount: '20', merchant: 'Alpha', category: 'Office costs' },
+  ];
+
+  it('sorts expenses by merchant and category', () => {
+    expect(sortExpenseRecords(expenseRecords, 'merchant-asc').map((r) => r.id)).toEqual(['y', 'x']);
+    expect(sortExpenseRecords(expenseRecords, 'merchant-desc').map((r) => r.id)).toEqual(['x', 'y']);
+    expect(sortExpenseRecords(expenseRecords, 'category-asc').map((r) => r.id)).toEqual(['y', 'x']);
   });
 });
