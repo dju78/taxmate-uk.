@@ -12,6 +12,7 @@ import { AddTransactionButton } from "./AddTransactionButton";
 import { StorageNoticeBanner } from "./StorageNoticeBanner";
 import { BackupReminderBanner } from "./BackupReminderBanner";
 import { OnboardingModal } from "./OnboardingModal";
+import { ReportsView } from "./ReportsView";
 import { DataAndBackup } from "./DataAndBackup";
 import { IncomeFilters, ExpenseFilters } from "./FilterBar";
 import { filterIncomeRecords, filterExpenseRecords, searchIncomeRecords, searchExpenseRecords, sortIncomeRecords, sortExpenseRecords, uniqueSorted } from "./filters";
@@ -331,7 +332,7 @@ function Dashboard() {
     { id: "dashboard", label: "Dashboard", Icon: Icons.Dashboard },
     { id: "income", label: "Income", Icon: Icons.Income },
     { id: "expenses", label: "Expenses", Icon: Icons.Expenses },
-    { id: "tax", label: "Tax estimate", Icon: Icons.Tax },
+    { id: "reports", label: "Reports", Icon: Icons.Tax },
     { id: "settings", label: "Settings", Icon: Icons.Settings },
   ];
 
@@ -884,52 +885,8 @@ function Dashboard() {
         );
       }
 
-      case "tax": {
-        const taxYearLabel = selectedTaxYearLabel;
-        const receivedYTD = storageService.calculateTotalReceived(taxRef, incomeRecords);
-        const expensesYTD = storageService.calculateTotalExpensesYTD(taxRef, expenseRecords);
-        const netProfitYTD = storageService.roundCurrency(receivedYTD - expensesYTD);
-
-        return (
-          <>
-            <div style={{ marginBottom: "32px" }}>
-              <h1 style={{ fontSize: pageHeadingSize, fontWeight: "800", color: TOKENS.colors.neutral[900], fontFamily: "Manrope, sans-serif" }}>
-                Tax estimate preview
-              </h1>
-              <p style={{ color: TOKENS.colors.neutral[600], marginTop: "8px" }}>Figures below are drawn from your recorded transactions for {taxYearLabel}.</p>
-            </div>
-
-            <Alert
-              variant="warning"
-              title="Estimate not yet available"
-              description="A Self Assessment tax estimate needs tested UK tax rules (personal allowance, bands, Class 2/4 NICs) that are not implemented yet. The figures below are your actual recorded income and expenses — not a tax calculation."
-            />
-
-            <div style={{ display: "grid", gridTemplateColumns: kpiCols, gap: "16px", marginTop: "24px" }}>
-              <div style={{ backgroundColor: "white", border: `1px solid ${TOKENS.colors.neutral[200]}`, borderRadius: "14px", padding: "20px" }}>
-                <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[500] }}>Income received</div>
-                <div style={{ fontSize: "30px", fontWeight: "800", color: TOKENS.colors.neutral[900], marginTop: "8px", fontFamily: "Manrope, sans-serif" }}>
-                  £{receivedYTD.toFixed(2)}
-                </div>
-                <div style={{ fontSize: "13px", color: TOKENS.colors.neutral[600], marginTop: "8px" }}>Tax year {taxYearLabel}</div>
-              </div>
-              <div style={{ backgroundColor: "white", border: `1px solid ${TOKENS.colors.neutral[200]}`, borderRadius: "14px", padding: "20px" }}>
-                <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[500] }}>Expenses recorded</div>
-                <div style={{ fontSize: "30px", fontWeight: "800", color: TOKENS.colors.neutral[900], marginTop: "8px", fontFamily: "Manrope, sans-serif" }}>
-                  £{expensesYTD.toFixed(2)}
-                </div>
-                <div style={{ fontSize: "13px", color: TOKENS.colors.neutral[600], marginTop: "8px" }}>Tax year {taxYearLabel}</div>
-              </div>
-              <div style={{ backgroundColor: "white", border: `1px solid ${TOKENS.colors.neutral[200]}`, borderRadius: "14px", padding: "20px" }}>
-                <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[500] }}>Recorded cash surplus</div>
-                <div style={{ fontSize: "30px", fontWeight: "800", color: TOKENS.colors.neutral[900], marginTop: "8px", fontFamily: "Manrope, sans-serif" }}>
-                  £{netProfitYTD.toFixed(2)}
-                </div>
-                <div style={{ fontSize: "13px", color: TOKENS.colors.neutral[600], marginTop: "8px" }}>Received income − all recorded expenses</div>
-              </div>
-            </div>
-          </>
-        );
+      case "reports": {
+        return <ReportsView />;
       }
 
       case "settings":
