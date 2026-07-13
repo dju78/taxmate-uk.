@@ -532,4 +532,40 @@ test.describe('Phase 8: Comprehensive Playwright E2E Tests', () => {
       await expect(page.getByText(giftAidWarning)).toBeVisible();
     });
   });
+
+  test.describe('Net Income Calculator', () => {
+    test('calculates take-home pay for a gross salary', async ({ page }) => {
+      await page.getByRole('button', { name: 'Calculators' }).click();
+      await expect(page.getByRole('heading', { name: 'Calculators' })).toBeVisible();
+      await expect(page.getByText('Prototype estimate only')).toBeVisible();
+
+      await page.getByLabel('Gross Annual Salary (£)').fill('35000');
+      await page.getByRole('button', { name: 'Calculate' }).click();
+
+      await expect(page.getByRole('heading', { name: 'Breakdown' })).toBeVisible();
+      // Basic rate tax happens to equal total Income Tax Due here (only one
+      // band applies), so this figure legitimately appears twice.
+      await expect(page.getByText('£4486.00').first()).toBeVisible();
+      await expect(page.getByText('£1794.40')).toBeVisible(); // Class 1 NIC
+      await expect(page.getByText('£28719.60')).toBeVisible(); // Net income
+    });
+
+    test('blocks Scotland with the correct message', async ({ page }) => {
+      await page.getByRole('button', { name: 'Calculators' }).click();
+      await page.getByLabel('Tax Region').selectOption('scotland');
+      await page.getByLabel('Gross Annual Salary (£)').fill('35000');
+      await page.getByRole('button', { name: 'Calculate' }).click();
+
+      await expect(page.getByText(/Scottish tax rules are not supported/)).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Breakdown' })).toBeHidden();
+    });
+
+    test('always discloses that pension and student loans are not modelled', async ({ page }) => {
+      await page.getByRole('button', { name: 'Calculators' }).click();
+      await page.getByLabel('Gross Annual Salary (£)').fill('35000');
+      await page.getByRole('button', { name: 'Calculate' }).click();
+
+      await expect(page.getByText(/does not account for pension contributions, student loan repayments/)).toBeVisible();
+    });
+  });
 });
