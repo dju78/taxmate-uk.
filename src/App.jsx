@@ -11,7 +11,7 @@ import { AddTransactionButton } from "./AddTransactionButton";
 import { StorageNoticeBanner } from "./StorageNoticeBanner";
 import { DataAndBackup } from "./DataAndBackup";
 import { IncomeFilters, ExpenseFilters } from "./FilterBar";
-import { defaultIncomeFilters, defaultExpenseFilters, filterIncomeRecords, filterExpenseRecords, uniqueSorted } from "./filters";
+import { filterIncomeRecords, filterExpenseRecords, uniqueSorted } from "./filters";
 
 // SVG Icons
 const Icons = {
@@ -239,8 +239,6 @@ function Dashboard() {
   const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, type: null, id: null });
   const [successMessage, setSuccessMessage] = useState(null);
   const [storageError] = useState(() => storageService.getStorageError());
-  const [incomeFilters, setIncomeFilters] = useState(defaultIncomeFilters);
-  const [expenseFilters, setExpenseFilters] = useState(defaultExpenseFilters);
 
   // Records + selected tax year live in the Zustand store (single source of truth).
   const incomeRecords = useTaxStore((s) => s.income);
@@ -252,6 +250,12 @@ function Dashboard() {
   const storeAddExpense = useTaxStore((s) => s.addExpense);
   const storeUpdateExpense = useTaxStore((s) => s.updateExpense);
   const storeDeleteExpense = useTaxStore((s) => s.deleteExpense);
+  const incomeFilters = useTaxStore((s) => s.incomeFilters);
+  const expenseFilters = useTaxStore((s) => s.expenseFilters);
+  const setIncomeFilters = useTaxStore((s) => s.setIncomeFilters);
+  const setExpenseFilters = useTaxStore((s) => s.setExpenseFilters);
+  const resetIncomeFilters = useTaxStore((s) => s.resetIncomeFilters);
+  const resetExpenseFilters = useTaxStore((s) => s.resetExpenseFilters);
 
   // Deterministic reference date that selects the chosen tax year for all
   // window-based calculations (totals, tables, charts, breakdowns, counts).
@@ -567,12 +571,12 @@ function Dashboard() {
                     <h3 style={{ fontSize: "18px", fontWeight: "700", fontFamily: "Manrope, sans-serif" }}>
                       Income History <span style={{ fontSize: "13px", fontWeight: "500", color: TOKENS.colors.neutral[500] }}>· {incomeTaxYearLabel}</span>
                     </h3>
-                    <span style={{ fontSize: "13px", color: TOKENS.colors.neutral[500] }}>Showing {filteredIncome.length} of {inTaxYear.length}</span>
+                    <span role="status" aria-live="polite" style={{ fontSize: "13px", color: TOKENS.colors.neutral[500] }}>Showing {filteredIncome.length} of {inTaxYear.length} records</span>
                   </div>
                   <IncomeFilters
                     filters={incomeFilters}
-                    onChange={(patch) => setIncomeFilters((prev) => ({ ...prev, ...patch }))}
-                    onReset={() => setIncomeFilters(defaultIncomeFilters)}
+                    onChange={setIncomeFilters}
+                    onReset={resetIncomeFilters}
                     sources={incomeSourceOptions}
                     categories={incomeCategoryOptions}
                   />
@@ -759,12 +763,12 @@ function Dashboard() {
                     <h3 style={{ fontSize: "18px", fontWeight: "700", fontFamily: "Manrope, sans-serif" }}>
                       Expense History <span style={{ fontSize: "13px", fontWeight: "500", color: TOKENS.colors.neutral[500] }}>· {expenseTaxYearLabel}</span>
                     </h3>
-                    <span style={{ fontSize: "13px", color: TOKENS.colors.neutral[500] }}>Showing {filteredExpenses.length} of {expensesInTaxYear.length}</span>
+                    <span role="status" aria-live="polite" style={{ fontSize: "13px", color: TOKENS.colors.neutral[500] }}>Showing {filteredExpenses.length} of {expensesInTaxYear.length} records</span>
                   </div>
                   <ExpenseFilters
                     filters={expenseFilters}
-                    onChange={(patch) => setExpenseFilters((prev) => ({ ...prev, ...patch }))}
-                    onReset={() => setExpenseFilters(defaultExpenseFilters)}
+                    onChange={setExpenseFilters}
+                    onReset={resetExpenseFilters}
                     categories={expenseCategoryOptions}
                   />
                   {filteredExpenses.length === 0 ? (

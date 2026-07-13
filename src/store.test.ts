@@ -226,3 +226,33 @@ describe('Phase 4 rework: backup schema / versioning / import modes', () => {
     expect(useTaxStore.getState().selectedTaxYear).toBe(currentTaxYearStart());
   });
 });
+
+describe('Phase 5: filter state in the store', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    useTaxStore.getState().resetIncomeFilters();
+    useTaxStore.getState().resetExpenseFilters();
+  });
+
+  it('setIncomeFilters / setExpenseFilters patch the store filter state', () => {
+    useTaxStore.getState().setIncomeFilters({ status: 'overdue', source: 'Alpha' });
+    expect(useTaxStore.getState().incomeFilters.status).toBe('overdue');
+    expect(useTaxStore.getState().incomeFilters.source).toBe('Alpha');
+    useTaxStore.getState().setExpenseFilters({ category: 'Travel' });
+    expect(useTaxStore.getState().expenseFilters.category).toBe('Travel');
+  });
+
+  it('reset actions restore the defaults', () => {
+    useTaxStore.getState().setIncomeFilters({ status: 'pending' });
+    useTaxStore.getState().resetIncomeFilters();
+    expect(useTaxStore.getState().incomeFilters.status).toBe('all');
+  });
+
+  it('changing the tax year resets ledger filters (avoids a stale empty ledger)', () => {
+    useTaxStore.getState().setIncomeFilters({ status: 'overdue', source: 'Alpha' });
+    useTaxStore.getState().setExpenseFilters({ category: 'Travel' });
+    useTaxStore.getState().setSelectedTaxYear(2024);
+    expect(useTaxStore.getState().incomeFilters).toEqual({ status: 'all', dateFrom: '', dateTo: '', source: 'all', category: 'all' });
+    expect(useTaxStore.getState().expenseFilters).toEqual({ dateFrom: '', dateTo: '', category: 'all' });
+  });
+});

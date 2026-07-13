@@ -5,6 +5,7 @@ import {
   uniqueSorted,
   isIncomeFilterActive,
   isExpenseFilterActive,
+  hasInvalidDateRange,
   defaultIncomeFilters,
   defaultExpenseFilters,
 } from './filters';
@@ -76,6 +77,31 @@ describe('Phase 5: expense filters', () => {
 
   it('isExpenseFilterActive reflects active filters', () => {
     expect(isExpenseFilterActive({ ...defaultExpenseFilters, category: 'Travel' })).toBe(true);
+  });
+});
+
+describe('hasInvalidDateRange', () => {
+  it('returns false when either date is missing', () => {
+    expect(hasInvalidDateRange(undefined, '2026-07-12')).toBe(false);
+    expect(hasInvalidDateRange('2026-07-01', undefined)).toBe(false);
+  });
+
+  it('accepts an equal start and end date', () => {
+    expect(hasInvalidDateRange('2026-07-12', '2026-07-12')).toBe(false);
+  });
+
+  it('detects when the start date is after the end date', () => {
+    expect(hasInvalidDateRange('2026-07-13', '2026-07-12')).toBe(true);
+  });
+});
+
+describe('invalid date range yields no records', () => {
+  it('income filter returns [] for an invalid range', () => {
+    expect(filterIncomeRecords(income, { ...defaultIncomeFilters, dateFrom: '2026-07-20', dateTo: '2026-07-10' })).toEqual([]);
+  });
+
+  it('expense filter returns [] for an invalid range', () => {
+    expect(filterExpenseRecords(expenses, { ...defaultExpenseFilters, dateFrom: '2026-07-20', dateTo: '2026-07-10' })).toEqual([]);
   });
 });
 

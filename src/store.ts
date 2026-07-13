@@ -1,6 +1,12 @@
 import { create } from 'zustand';
 import { storageService, SELECTED_TAX_YEAR_KEY } from './storage';
 import type { IncomeRecord, ExpenseRecord, ExportPreferences } from './types';
+import {
+  defaultIncomeFilters,
+  defaultExpenseFilters,
+  type IncomeFilterState,
+  type ExpenseFilterState,
+} from './filters';
 
 // A tax year is represented by its START calendar year (e.g. 2026 => 2026/27).
 export const taxYearStartToLabel = (startYear: number): string =>
@@ -48,6 +54,12 @@ export interface TaxStore {
   addExpense: (record: Partial<ExpenseRecord>) => void;
   updateExpense: (id: string, record: Partial<ExpenseRecord>) => void;
   deleteExpense: (id: string) => void;
+  incomeFilters: IncomeFilterState;
+  expenseFilters: ExpenseFilterState;
+  setIncomeFilters: (patch: Partial<IncomeFilterState>) => void;
+  setExpenseFilters: (patch: Partial<ExpenseFilterState>) => void;
+  resetIncomeFilters: () => void;
+  resetExpenseFilters: () => void;
   loadDemo: () => { income: number; expenses: number };
   removeDemo: () => { income: number; expenses: number };
   clearAll: () => void;
@@ -63,6 +75,8 @@ export const useTaxStore = create<TaxStore>((set, get) => ({
   income: storageService.getIncomeRecords(),
   expenses: storageService.getExpenseRecords(),
   selectedTaxYear: loadSelectedYear(),
+  incomeFilters: defaultIncomeFilters,
+  expenseFilters: defaultExpenseFilters,
   refresh: () =>
     set({
       income: storageService.getIncomeRecords(),
@@ -74,8 +88,14 @@ export const useTaxStore = create<TaxStore>((set, get) => ({
     } catch {
       // ignore
     }
-    set({ selectedTaxYear: year });
+    // Reset ledger filters so a source/category from another year can't leave
+    // the ledger unexpectedly empty.
+    set({ selectedTaxYear: year, incomeFilters: defaultIncomeFilters, expenseFilters: defaultExpenseFilters });
   },
+  setIncomeFilters: (patch) => set((s) => ({ incomeFilters: { ...s.incomeFilters, ...patch } })),
+  setExpenseFilters: (patch) => set((s) => ({ expenseFilters: { ...s.expenseFilters, ...patch } })),
+  resetIncomeFilters: () => set({ incomeFilters: defaultIncomeFilters }),
+  resetExpenseFilters: () => set({ expenseFilters: defaultExpenseFilters }),
   addIncome: (record) => {
     storageService.addIncomeRecord(record);
     get().refresh();
