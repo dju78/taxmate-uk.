@@ -15,8 +15,14 @@ test.describe('Phase 8: Comprehensive Playwright E2E Tests', () => {
     await page.goto('/');
     await page.evaluate(() => {
       localStorage.clear();
-      // Set onboarding completed to bypass the modal
-      localStorage.setItem('taxmate_app_preferences', JSON.stringify({ onboardingCompleted: true }));
+      // Onboarding opens whenever the saved onboardingVersion is behind
+      // CURRENT_ONBOARDING_VERSION (see OnboardingModal.tsx) — completed/
+      // skipped flags alone no longer suppress it, so set a version high
+      // enough to bypass the modal for every test in this suite.
+      localStorage.setItem(
+        'taxmate_app_preferences',
+        JSON.stringify({ onboardingCompleted: true, onboardingVersion: 999 })
+      );
     });
     await page.reload();
   });
