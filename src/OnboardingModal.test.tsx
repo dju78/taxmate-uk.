@@ -68,6 +68,16 @@ describe('OnboardingModal lifecycle', () => {
     expect(screen.getByText('Stored on this device')).toBeTruthy();
   });
 
+  it('announces the current step to screen readers via sr-only text, updated per step', () => {
+    render(<OnboardingModal />);
+    expect(screen.getByText('Step 1 of 3')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Next' })); // -> step 2
+    expect(screen.getByText('Step 2 of 3')).toBeTruthy();
+    expect(screen.queryByText('Step 1 of 3')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Next' })); // -> step 3
+    expect(screen.getByText('Step 3 of 3')).toBeTruthy();
+  });
+
   it('supports keyboard navigation: focus starts inside the dialog and Escape closes it (treated as skip)', async () => {
     render(<OnboardingModal />);
     const dialog = screen.getByRole('dialog');

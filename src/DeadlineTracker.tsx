@@ -106,12 +106,12 @@ export function DeadlineTracker({
       className="rounded-2xl border border-neutral-200 bg-white p-6"
     >
       <div className="mb-3 flex items-center gap-2">
-        <h3
+        <h2
           className="text-lg font-bold text-neutral-900"
           style={{ fontFamily: 'Manrope, sans-serif' }}
         >
           Key Self Assessment deadlines
-        </h3>
+        </h2>
         {selectedTaxYearLabel && (
           <span className="rounded-full border border-neutral-200 px-2 py-0.5 text-[11px] font-semibold text-neutral-500">
             {selectedTaxYearLabel} first

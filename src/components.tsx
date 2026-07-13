@@ -143,7 +143,7 @@ export const Table = ({ columns, rows }: TableProps) => (
       <thead>
         <tr style={{ borderBottom: `2px solid ${TOKENS.colors.neutral[200]}` }}>
           {columns.map((col) => (
-            <th key={col} style={{ textAlign: 'left', padding: '8px 16px', fontWeight: '600', color: TOKENS.colors.neutral[700] }}>
+            <th key={col} scope="col" style={{ textAlign: 'left', padding: '8px 16px', fontWeight: '600', color: TOKENS.colors.neutral[700] }}>
               {col}
             </th>
           ))}
@@ -207,7 +207,7 @@ export function TransactionList<T>({ isMobile, columns, rows, getKey }: Transact
         <thead>
           <tr style={{ borderBottom: `2px solid ${TOKENS.colors.neutral[200]}` }}>
             {columns.map((col) => (
-              <th key={col.key} style={{ textAlign: col.align || 'left', padding: '12px 16px', fontWeight: '600', color: TOKENS.colors.neutral[700] }}>
+              <th key={col.key} scope="col" style={{ textAlign: col.align || 'left', padding: '12px 16px', fontWeight: '600', color: TOKENS.colors.neutral[700] }}>
                 {col.label}
               </th>
             ))}

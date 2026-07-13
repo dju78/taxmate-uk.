@@ -137,10 +137,11 @@ export function OnboardingModal() {
           </div>
         )}
 
+        <p className="sr-only" aria-live="polite">Step {step} of 3</p>
         <div className="mt-6 flex justify-center gap-1">
-          <div className={`h-1.5 w-8 rounded-full ${step >= 1 ? 'bg-green-600' : 'bg-neutral-200'}`} />
-          <div className={`h-1.5 w-8 rounded-full ${step >= 2 ? 'bg-green-600' : 'bg-neutral-200'}`} />
-          <div className={`h-1.5 w-8 rounded-full ${step >= 3 ? 'bg-green-600' : 'bg-neutral-200'}`} />
+          <div aria-hidden="true" className={`h-1.5 w-8 rounded-full ${step >= 1 ? 'bg-green-600' : 'bg-neutral-200'}`} />
+          <div aria-hidden="true" className={`h-1.5 w-8 rounded-full ${step >= 2 ? 'bg-green-600' : 'bg-neutral-200'}`} />
+          <div aria-hidden="true" className={`h-1.5 w-8 rounded-full ${step >= 3 ? 'bg-green-600' : 'bg-neutral-200'}`} />
         </div>
       </div>
     </div>

@@ -236,19 +236,19 @@ export function ReportsView() {
           
           <div style={{ display: "grid", gridTemplateColumns: kpiCols, gap: "16px", marginBottom: "24px" }}>
             <div style={{ backgroundColor: "white", border: `1px solid ${TOKENS.colors.neutral[200]}`, borderRadius: "14px", padding: "20px" }}>
-              <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[500] }}>Income received</div>
+              <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[600] }}>Income received</div>
               <div style={{ fontSize: "30px", fontWeight: "800", color: TOKENS.colors.neutral[900], marginTop: "8px", fontFamily: "Manrope, sans-serif" }}>
                 £{receivedYTD.toFixed(2)}
               </div>
             </div>
             <div style={{ backgroundColor: "white", border: `1px solid ${TOKENS.colors.neutral[200]}`, borderRadius: "14px", padding: "20px" }}>
-              <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[500] }}>Expenses recorded</div>
+              <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[600] }}>Expenses recorded</div>
               <div style={{ fontSize: "30px", fontWeight: "800", color: TOKENS.colors.neutral[900], marginTop: "8px", fontFamily: "Manrope, sans-serif" }}>
                 £{expensesYTD.toFixed(2)}
               </div>
             </div>
             <div style={{ backgroundColor: "white", border: `1px solid ${TOKENS.colors.neutral[200]}`, borderRadius: "14px", padding: "20px" }}>
-              <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[500] }}>Recorded cash surplus</div>
+              <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[600] }}>Recorded cash surplus</div>
               <div style={{ fontSize: "30px", fontWeight: "800", color: TOKENS.colors.neutral[900], marginTop: "8px", fontFamily: "Manrope, sans-serif" }}>
                 £{netProfitYTD.toFixed(2)}
               </div>
@@ -324,11 +324,11 @@ export function ReportsView() {
             <table className="w-full text-left text-sm">
               <thead className="bg-neutral-50 border-b border-neutral-200">
                 <tr>
-                  <th className="px-4 py-3 font-semibold text-neutral-700">Date</th>
-                  <th className="px-4 py-3 font-semibold text-neutral-700">Source</th>
-                  <th className="px-4 py-3 font-semibold text-neutral-700">Category</th>
-                  <th className="px-4 py-3 font-semibold text-neutral-700">Status</th>
-                  <th className="px-4 py-3 font-semibold text-neutral-700 text-right">Amount</th>
+                  <th scope="col" className="px-4 py-3 font-semibold text-neutral-700">Date</th>
+                  <th scope="col" className="px-4 py-3 font-semibold text-neutral-700">Source</th>
+                  <th scope="col" className="px-4 py-3 font-semibold text-neutral-700">Category</th>
+                  <th scope="col" className="px-4 py-3 font-semibold text-neutral-700">Status</th>
+                  <th scope="col" className="px-4 py-3 font-semibold text-neutral-700 text-right">Amount</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100">
@@ -386,10 +386,10 @@ export function ReportsView() {
             <table className="w-full text-left text-sm">
               <thead className="bg-neutral-50 border-b border-neutral-200">
                 <tr>
-                  <th className="px-4 py-3 font-semibold text-neutral-700">Date</th>
-                  <th className="px-4 py-3 font-semibold text-neutral-700">Merchant</th>
-                  <th className="px-4 py-3 font-semibold text-neutral-700">Category</th>
-                  <th className="px-4 py-3 font-semibold text-neutral-700 text-right">Amount</th>
+                  <th scope="col" className="px-4 py-3 font-semibold text-neutral-700">Date</th>
+                  <th scope="col" className="px-4 py-3 font-semibold text-neutral-700">Merchant</th>
+                  <th scope="col" className="px-4 py-3 font-semibold text-neutral-700">Category</th>
+                  <th scope="col" className="px-4 py-3 font-semibold text-neutral-700 text-right">Amount</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100">
@@ -430,19 +430,19 @@ export function ReportsView() {
           />
           <div style={{ display: "grid", gridTemplateColumns: kpiCols, gap: "16px", marginTop: "24px" }}>
             <div style={{ backgroundColor: "white", border: `1px solid ${TOKENS.colors.neutral[200]}`, borderRadius: "14px", padding: "20px" }}>
-              <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[500] }}>Income received</div>
+              <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[600] }}>Income received</div>
               <div style={{ fontSize: "30px", fontWeight: "800", color: TOKENS.colors.neutral[900], marginTop: "8px", fontFamily: "Manrope, sans-serif" }}>
                 £{receivedYTD.toFixed(2)}
               </div>
             </div>
             <div style={{ backgroundColor: "white", border: `1px solid ${TOKENS.colors.neutral[200]}`, borderRadius: "14px", padding: "20px" }}>
-              <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[500] }}>Expenses recorded</div>
+              <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[600] }}>Expenses recorded</div>
               <div style={{ fontSize: "30px", fontWeight: "800", color: TOKENS.colors.neutral[900], marginTop: "8px", fontFamily: "Manrope, sans-serif" }}>
                 £{expensesYTD.toFixed(2)}
               </div>
             </div>
             <div style={{ backgroundColor: "white", border: `1px solid ${TOKENS.colors.neutral[200]}`, borderRadius: "14px", padding: "20px" }}>
-              <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[500] }}>Recorded cash surplus</div>
+              <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[600] }}>Recorded cash surplus</div>
               <div style={{ fontSize: "30px", fontWeight: "800", color: TOKENS.colors.neutral[900], marginTop: "8px", fontFamily: "Manrope, sans-serif" }}>
                 £{netProfitYTD.toFixed(2)}
               </div>

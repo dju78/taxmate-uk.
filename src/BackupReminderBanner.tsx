@@ -22,7 +22,7 @@ export function BackupReminderBanner() {
 
   return (
     <div
-      role="alert"
+      role="status"
       className="border-b border-blue-300 bg-blue-50 px-4 py-3 text-blue-900 sm:px-6 print:hidden"
     >
       <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-3">

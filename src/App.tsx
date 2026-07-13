@@ -384,14 +384,14 @@ function Dashboard() {
                 <div style={{ fontSize: "13px", opacity: 0.85, marginTop: "8px" }}>Received income − all recorded expenses · {taxYearLabel}</div>
               </div>
               <div style={{ backgroundColor: "white", border: `1px solid ${TOKENS.colors.neutral[200]}`, borderRadius: "14px", padding: "20px" }}>
-                <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[500] }}>Income received YTD</div>
+                <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[600] }}>Income received YTD</div>
                 <div style={{ fontSize: "30px", fontWeight: "800", color: TOKENS.colors.neutral[900], marginTop: "8px", fontFamily: "Manrope, sans-serif" }}>
                   £{incomeReceivedYTD.toFixed(2)}
                 </div>
                 <div style={{ fontSize: "13px", color: TOKENS.colors.neutral[600], marginTop: "8px" }}>Tax year {taxYearLabel}</div>
               </div>
               <div style={{ backgroundColor: "white", border: `1px solid ${TOKENS.colors.neutral[200]}`, borderRadius: "14px", padding: "20px" }}>
-                <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[500] }}>Expenses YTD</div>
+                <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[600] }}>Expenses YTD</div>
                 <div style={{ fontSize: "30px", fontWeight: "800", color: TOKENS.colors.neutral[900], marginTop: "8px", fontFamily: "Manrope, sans-serif" }}>
                   £{expensesYTD.toFixed(2)}
                 </div>
@@ -403,9 +403,9 @@ function Dashboard() {
               <div style={{ backgroundColor: "white", border: `1px solid ${TOKENS.colors.neutral[200]}`, borderRadius: "14px", padding: "24px" }}>
                 {monthKeys.length === 0 ? (
                   <>
-                    <h3 style={{ fontSize: "18px", fontWeight: "700", marginBottom: "8px", fontFamily: "Manrope, sans-serif" }}>
+                    <h2 style={{ fontSize: "18px", fontWeight: "700", marginBottom: "8px", fontFamily: "Manrope, sans-serif" }}>
                       Income vs expenses <span style={{ fontSize: "13px", fontWeight: "500", color: TOKENS.colors.neutral[500] }}>· {taxYearLabel}</span>
-                    </h3>
+                    </h2>
                     <p style={{ fontSize: "14px", color: TOKENS.colors.neutral[600] }}>No transactions recorded for this tax year yet.</p>
                   </>
                 ) : (
@@ -433,9 +433,9 @@ function Dashboard() {
               </div>
 
               <div style={{ backgroundColor: "white", border: `1px solid ${TOKENS.colors.neutral[200]}`, borderRadius: "14px", padding: "24px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                <h3 style={{ fontSize: "18px", fontWeight: "700", marginBottom: "16px", fontFamily: "Manrope, sans-serif" }}>
+                <h2 style={{ fontSize: "18px", fontWeight: "700", marginBottom: "16px", fontFamily: "Manrope, sans-serif" }}>
                   Tax year {taxYearLabel}
-                </h3>
+                </h2>
                 <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between" }}>
                     <span style={{ fontSize: "13px", color: TOKENS.colors.neutral[600] }}>Outstanding</span>
@@ -520,21 +520,21 @@ function Dashboard() {
 
             <div style={{ display: "grid", gridTemplateColumns: kpiCols, gap: "16px", marginBottom: "16px" }}>
               <div style={{ backgroundColor: "white", border: `1px solid ${TOKENS.colors.neutral[200]}`, borderRadius: "14px", padding: "20px" }}>
-                <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[500] }}>Total received</div>
+                <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[600] }}>Total received</div>
                 <div style={{ fontSize: "30px", fontWeight: "800", color: TOKENS.colors.neutral[900], marginTop: "8px", fontFamily: "Manrope, sans-serif" }}>
                   £{totalReceived.toFixed(2)}
                 </div>
                 <div style={{ fontSize: "13px", color: TOKENS.colors.neutral[600], marginTop: "8px" }}>{receivedCount} payment{receivedCount === 1 ? '' : 's'} received</div>
               </div>
               <div style={{ backgroundColor: "white", border: `1px solid ${TOKENS.colors.neutral[200]}`, borderRadius: "14px", padding: "20px" }}>
-                <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[500] }}>Total invoiced</div>
+                <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[600] }}>Total invoiced</div>
                 <div style={{ fontSize: "30px", fontWeight: "800", color: TOKENS.colors.neutral[900], marginTop: "8px", fontFamily: "Manrope, sans-serif" }}>
                   £{totalInvoiced.toFixed(2)}
                 </div>
                 <div style={{ fontSize: "13px", color: TOKENS.colors.neutral[600], marginTop: "8px" }}>Received + outstanding + overdue</div>
               </div>
               <div style={{ backgroundColor: "white", border: `1px solid ${TOKENS.colors.neutral[200]}`, borderRadius: "14px", padding: "20px" }}>
-                <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[500] }}>Average per completed tax month</div>
+                <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[600] }}>Average per completed tax month</div>
                 {avgMonthly === null ? (
                   <>
                     <div style={{ fontSize: "30px", fontWeight: "800", color: TOKENS.colors.neutral[400], marginTop: "8px", fontFamily: "Manrope, sans-serif" }}>
@@ -555,21 +555,21 @@ function Dashboard() {
 
             <div style={{ display: "grid", gridTemplateColumns: kpiCols, gap: "16px", marginBottom: "24px" }}>
               <div style={{ backgroundColor: "white", border: `1px solid ${TOKENS.colors.neutral[200]}`, borderRadius: "14px", padding: "20px" }}>
-                <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[500] }}>Outstanding</div>
+                <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[600] }}>Outstanding</div>
                 <div style={{ fontSize: "24px", fontWeight: "800", color: TOKENS.colors.semantic.warning, marginTop: "8px", fontFamily: "Manrope, sans-serif" }}>
                   £{outstanding.toFixed(2)}
                 </div>
                 <div style={{ fontSize: "13px", color: TOKENS.colors.neutral[600], marginTop: "8px" }}>{pendingCount} pending invoice{pendingCount === 1 ? '' : 's'}</div>
               </div>
               <div style={{ backgroundColor: "white", border: `1px solid ${TOKENS.colors.neutral[200]}`, borderRadius: "14px", padding: "20px" }}>
-                <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[500] }}>Overdue</div>
+                <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[600] }}>Overdue</div>
                 <div style={{ fontSize: "24px", fontWeight: "800", color: TOKENS.colors.semantic.danger, marginTop: "8px", fontFamily: "Manrope, sans-serif" }}>
                   £{overdue.toFixed(2)}
                 </div>
                 <div style={{ fontSize: "13px", color: TOKENS.colors.neutral[600], marginTop: "8px" }}>{overdueCount} overdue invoice{overdueCount === 1 ? '' : 's'}</div>
               </div>
               <div style={{ backgroundColor: "white", border: `1px solid ${TOKENS.colors.neutral[200]}`, borderRadius: "14px", padding: "20px" }}>
-                <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[500] }}>{isCurrentYear ? "Received this month" : "Tax year"}</div>
+                <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[600] }}>{isCurrentYear ? "Received this month" : "Tax year"}</div>
                 <div style={{ fontSize: "24px", fontWeight: "800", color: TOKENS.colors.neutral[900], marginTop: "8px", fontFamily: "Manrope, sans-serif" }}>
                   {isCurrentYear ? `£${(thisMonth ?? 0).toFixed(2)}` : incomeTaxYearLabel}
                 </div>
@@ -589,9 +589,9 @@ function Dashboard() {
               <>
                 <div style={{ backgroundColor: "white", border: `1px solid ${TOKENS.colors.neutral[200]}`, borderRadius: "14px", padding: "24px", marginBottom: "24px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: "8px", marginBottom: "16px" }}>
-                    <h3 style={{ fontSize: "18px", fontWeight: "700", fontFamily: "Manrope, sans-serif" }}>
+                    <h2 style={{ fontSize: "18px", fontWeight: "700", fontFamily: "Manrope, sans-serif" }}>
                       Income History <span style={{ fontSize: "13px", fontWeight: "500", color: TOKENS.colors.neutral[500] }}>· {incomeTaxYearLabel}</span>
-                    </h3>
+                    </h2>
                     <span role="status" aria-live="polite" style={{ fontSize: "13px", color: TOKENS.colors.neutral[500] }}>Showing {searchedIncome.length} of {inTaxYear.length} records</span>
                   </div>
                   <IncomeFilters
@@ -737,21 +737,21 @@ function Dashboard() {
 
             <div style={{ display: "grid", gridTemplateColumns: kpiCols, gap: "16px", marginBottom: "24px" }}>
               <div style={{ backgroundColor: "white", border: `1px solid ${TOKENS.colors.neutral[200]}`, borderRadius: "14px", padding: "20px" }}>
-                <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[500] }}>Total expenses</div>
+                <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[600] }}>Total expenses</div>
                 <div style={{ fontSize: "30px", fontWeight: "800", color: TOKENS.colors.neutral[900], marginTop: "8px", fontFamily: "Manrope, sans-serif" }}>
                   £{totalYTD.toFixed(2)}
                 </div>
                 <div style={{ fontSize: "13px", color: TOKENS.colors.neutral[600], marginTop: "8px" }}>{expensesInTaxYear.length} receipt{expensesInTaxYear.length === 1 ? '' : 's'} logged</div>
               </div>
               <div style={{ backgroundColor: "white", border: `1px solid ${TOKENS.colors.neutral[200]}`, borderRadius: "14px", padding: "20px" }}>
-                <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[500] }}>{isCurrentYear ? "This month" : "Tax year"}</div>
+                <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[600] }}>{isCurrentYear ? "This month" : "Tax year"}</div>
                 <div style={{ fontSize: "30px", fontWeight: "800", color: TOKENS.colors.neutral[900], marginTop: "8px", fontFamily: "Manrope, sans-serif" }}>
                   {isCurrentYear ? `£${(thisMonth ?? 0).toFixed(2)}` : expenseTaxYearLabel}
                 </div>
                 <div style={{ fontSize: "13px", color: TOKENS.colors.neutral[600], marginTop: "8px" }}>{isCurrentYear ? "expenses this month" : "Complete tax year"}</div>
               </div>
               <div style={{ backgroundColor: "white", border: `1px solid ${TOKENS.colors.neutral[200]}`, borderRadius: "14px", padding: "20px" }}>
-                <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[500] }}>Average per completed tax month</div>
+                <div style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[600] }}>Average per completed tax month</div>
                 {avgMonthly === null ? (
                   <>
                     <div style={{ fontSize: "30px", fontWeight: "800", color: TOKENS.colors.neutral[400], marginTop: "8px", fontFamily: "Manrope, sans-serif" }}>
@@ -782,9 +782,9 @@ function Dashboard() {
               <>
                 <div style={{ backgroundColor: "white", border: `1px solid ${TOKENS.colors.neutral[200]}`, borderRadius: "14px", padding: "24px", marginBottom: "24px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: "8px", marginBottom: "16px" }}>
-                    <h3 style={{ fontSize: "18px", fontWeight: "700", fontFamily: "Manrope, sans-serif" }}>
+                    <h2 style={{ fontSize: "18px", fontWeight: "700", fontFamily: "Manrope, sans-serif" }}>
                       Expense History <span style={{ fontSize: "13px", fontWeight: "500", color: TOKENS.colors.neutral[500] }}>· {expenseTaxYearLabel}</span>
-                    </h3>
+                    </h2>
                     <span role="status" aria-live="polite" style={{ fontSize: "13px", color: TOKENS.colors.neutral[500] }}>Showing {searchedExpenses.length} of {expensesInTaxYear.length} records</span>
                   </div>
                   <ExpenseFilters
