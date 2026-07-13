@@ -1,5 +1,5 @@
 import { TaxRules, TaxBandResult } from './types';
-import { floorPence, roundPence } from './money';
+import { floorPence } from './money';
 
 export interface IncomeTaxResult {
   personalAllowanceUsed: number; // in pence

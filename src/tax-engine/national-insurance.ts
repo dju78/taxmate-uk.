@@ -1,5 +1,4 @@
 import { TaxRules } from './types';
-import { roundPence } from './money';
 
 export function calculateClass4NICs(
   taxableTradingProfit: number,

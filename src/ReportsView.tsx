@@ -49,7 +49,7 @@ export function ReportsView() {
   });
   const [isConfirmed, setIsConfirmed] = useState(false);
 
-  const updateProfile = (key: keyof typeof profileForm, val: any) => {
+  const updateProfile = <K extends keyof typeof profileForm>(key: K, val: typeof profileForm[K]) => {
     setProfileForm(prev => ({ ...prev, [key]: val }));
     setIsConfirmed(false); // invalidate estimate on any change
   };
@@ -505,7 +505,7 @@ export function ReportsView() {
                   <label className="block text-sm font-medium text-neutral-700 mb-1">Tax Region</label>
                   <select 
                     value={profileForm.taxRegion}
-                    onChange={(e) => updateProfile('taxRegion', e.target.value)}
+                    onChange={(e) => updateProfile('taxRegion', e.target.value as TaxRegion)}
                     className="w-full p-2 border border-neutral-300 rounded focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900"
                   >
                     <option value="england">England</option>
@@ -529,7 +529,7 @@ export function ReportsView() {
                   <label className="block text-sm font-medium text-neutral-700 mb-1">Accounting Basis</label>
                   <select 
                     value={profileForm.accountingBasis}
-                    onChange={(e) => updateProfile('accountingBasis', e.target.value)}
+                    onChange={(e) => updateProfile('accountingBasis', e.target.value as "cash" | "traditional")}
                     className="w-full p-2 border border-neutral-300 rounded focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900"
                   >
                     <option value="cash">Cash Basis (Default)</option>
@@ -541,7 +541,7 @@ export function ReportsView() {
                   <label className="block text-sm font-medium text-neutral-700 mb-1">Deduction Method</label>
                   <select 
                     value={profileForm.deductionMethod}
-                    onChange={(e) => updateProfile('deductionMethod', e.target.value)}
+                    onChange={(e) => updateProfile('deductionMethod', e.target.value as DeductionMethod)}
                     className="w-full p-2 border border-neutral-300 rounded focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900"
                   >
                     <option value="actual-expenses">Actual Expenses</option>
@@ -586,7 +586,7 @@ export function ReportsView() {
                       <span>£{formatPounds(estimateResult.receivedTradingIncome)}</span>
                     </div>
                     <div className="flex justify-between text-neutral-600">
-                      <span>Deduction ({estimateResult.deductionMethodUsed === 'actual' ? 'Actual Expenses' : 'Trading Allowance'})</span>
+                      <span>Deduction ({estimateResult.deductionMethodUsed === 'actual-expenses' ? 'Actual Expenses' : 'Trading Allowance'})</span>
                       <span className="text-red-600">− £{formatPounds(estimateResult.deductionAmount)}</span>
                     </div>
                     <div className="flex justify-between font-bold text-neutral-900 pt-2 border-t border-neutral-100">

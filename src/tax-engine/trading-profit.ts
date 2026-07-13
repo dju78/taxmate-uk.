@@ -54,8 +54,8 @@ export function calculateTradingProfit(
   // Wait, actual expenses CAN create a loss.
   // So if allowableExpenses > receivedTradingIncome, profit is negative (loss).
   
-  let deductionAmount = 0;
-  let deductionMethodUsed = input.deductionMethod;
+  let deductionAmount: number;
+  const deductionMethodUsed = input.deductionMethod;
 
   if (input.deductionMethod === 'trading-allowance') {
     if (!input.tradingAllowanceEligible) {
