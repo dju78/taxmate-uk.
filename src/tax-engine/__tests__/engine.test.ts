@@ -165,6 +165,17 @@ describe('Tax Engine Matrix Scenarios', () => {
     expect(() => validateProfile(inputEmp.profile)).toThrow("The estimate engine does not currently support");
   });
 
+  it('16. Gift Aid / pension warning appears only when the checkbox is set', () => {
+    const withGiftAid = createInput(30000, 0);
+    withGiftAid.giftAidOrPensionContributions = true;
+    const resWith = calculateEstimate(withGiftAid);
+    expect(resWith.warnings.some((w) => w.includes('Gift Aid'))).toBe(true);
+
+    const withoutGiftAid = createInput(30000, 0);
+    const resWithout = calculateEstimate(withoutGiftAid);
+    expect(resWithout.warnings.some((w) => w.includes('Gift Aid'))).toBe(false);
+  });
+
   describe('Golden Vectors from HMRC', () => {
     it('Vector 1: £30,000 profit (Basic Rate)', () => {
       // £31,000 income - £1,000 TA = £30,000 profit.

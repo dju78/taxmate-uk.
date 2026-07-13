@@ -5,7 +5,7 @@ export const rules2026_27: TaxRules = {
   sourceUrl: "https://www.gov.uk/government/publications/rates-and-allowances-income-tax",
   sourceTitle: "Rates and allowances: Income Tax",
   sourceCheckedAt: "2026-04-06T00:00:00.000Z",
-  ruleVersion: "confirmed",
+  ruleVersion: "assumed",
   personalAllowance: 1257000,
   personalAllowanceTaperThreshold: 10000000,
   tradingAllowance: 100000,

@@ -5,7 +5,7 @@ export const rules2025_26: TaxRules = {
   sourceUrl: "https://www.gov.uk/government/publications/rates-and-allowances-national-insurance-contributions",
   sourceTitle: "Rates and allowances: National Insurance contributions",
   sourceCheckedAt: "2025-04-06T00:00:00.000Z",
-  ruleVersion: "confirmed",
+  ruleVersion: "assumed",
   personalAllowance: 1257000,
   personalAllowanceTaperThreshold: 10000000,
   tradingAllowance: 100000,

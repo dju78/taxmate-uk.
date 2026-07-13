@@ -2,7 +2,7 @@ import { EstimateInput, TaxRules } from './types';
 import { TradingProfitResult } from './trading-profit';
 
 export function generateExplanations(
-  _input: EstimateInput,
+  input: EstimateInput,
   profitResult: TradingProfitResult,
   rules: TaxRules
 ): string[] {
@@ -21,6 +21,12 @@ export function generateExplanations(
 
   if (profitResult.taxableTradingProfit > rules.personalAllowanceTaperThreshold) {
     warnings.push(`Your profit is above £100,000, so your Personal Allowance has been reduced.`);
+  }
+
+  if (input.giftAidOrPensionContributions) {
+    warnings.push(
+      "This estimate does not account for Gift Aid donations or pension contributions, which can extend your basic rate band. Your actual liability may be lower than shown."
+    );
   }
 
   return warnings;

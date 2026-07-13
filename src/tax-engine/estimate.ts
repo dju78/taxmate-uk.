@@ -64,7 +64,7 @@ export function calculateEstimate(input: EstimateInput): EstimateResult {
     effectiveRate,
     
     calculationDate: new Date().toISOString(),
-    ruleVersion: "1.0.0", // Hardcoded version for v1
+    ruleVersion: rules.ruleVersion,
     warnings
   };
 }
