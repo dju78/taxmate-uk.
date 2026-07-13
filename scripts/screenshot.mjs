@@ -8,10 +8,10 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
 const __dir = dirname(fileURLToPath(import.meta.url));
-const outDir = join(__dir, '..', 'screenshots');
+const outDir = join(__dir, '..', process.env.OUT_DIR || 'docs/verification');
 mkdirSync(outDir, { recursive: true });
 
-const BASE = 'http://localhost:5179';
+const BASE = process.env.TARGET_URL || 'http://localhost:5173';
 
 const VIEWPORTS = [
   { name: 'desktop', width: 1440, height: 900 },
