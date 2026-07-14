@@ -537,9 +537,10 @@ test.describe('Phase 8: Comprehensive Playwright E2E Tests', () => {
     test('calculates take-home pay for a gross salary', async ({ page }) => {
       await page.getByRole('button', { name: 'Calculators' }).click();
       await expect(page.getByRole('heading', { name: 'Calculators' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Take-home pay calculator' })).toBeVisible();
       await expect(page.getByText('Prototype estimate only')).toBeVisible();
 
-      await page.getByLabel('Gross Annual Salary (£)').fill('35000');
+      await page.getByLabel('Gross annual salary').fill('35000');
       await page.getByRole('button', { name: 'Calculate' }).click();
 
       await expect(page.getByRole('heading', { name: 'Breakdown' })).toBeVisible();
@@ -552,8 +553,8 @@ test.describe('Phase 8: Comprehensive Playwright E2E Tests', () => {
 
     test('blocks Scotland with the correct message', async ({ page }) => {
       await page.getByRole('button', { name: 'Calculators' }).click();
-      await page.getByLabel('Tax Region').selectOption('scotland');
-      await page.getByLabel('Gross Annual Salary (£)').fill('35000');
+      await page.getByLabel('Tax region').selectOption('scotland');
+      await page.getByLabel('Gross annual salary').fill('35000');
       await page.getByRole('button', { name: 'Calculate' }).click();
 
       await expect(page.getByText(/Scottish tax rules are not supported/)).toBeVisible();
@@ -562,7 +563,7 @@ test.describe('Phase 8: Comprehensive Playwright E2E Tests', () => {
 
     test('always discloses that student loans and benefits-in-kind are not modelled', async ({ page }) => {
       await page.getByRole('button', { name: 'Calculators' }).click();
-      await page.getByLabel('Gross Annual Salary (£)').fill('35000');
+      await page.getByLabel('Gross annual salary').fill('35000');
       await page.getByRole('button', { name: 'Calculate' }).click();
 
       await expect(page.getByText(/does not account for student loan repayments/)).toBeVisible();
@@ -570,10 +571,10 @@ test.describe('Phase 8: Comprehensive Playwright E2E Tests', () => {
 
     test('applies a pension contribution percentage before tax and NIC', async ({ page }) => {
       await page.getByRole('button', { name: 'Calculators' }).click();
-      await page.getByLabel('Gross Annual Salary (£)').fill('35000');
+      await page.getByLabel('Gross annual salary').fill('35000');
 
       // Range inputs don't support fill(); use keyboard to jump to the max (10%).
-      const pensionSlider = page.getByLabel(/Pension Contribution/);
+      const pensionSlider = page.getByLabel(/Pension contribution/i);
       await pensionSlider.focus();
       await pensionSlider.press('End');
 
@@ -586,8 +587,8 @@ test.describe('Phase 8: Comprehensive Playwright E2E Tests', () => {
 
     test('applies an explicit tax code and overrides the standard Personal Allowance', async ({ page }) => {
       await page.getByRole('button', { name: 'Calculators' }).click();
-      await page.getByLabel('Gross Annual Salary (£)').fill('20000');
-      await page.getByLabel('Tax Code').selectOption('BR');
+      await page.getByLabel('Gross annual salary').fill('20000');
+      await page.getByLabel('Tax code').selectOption('BR');
       await page.getByRole('button', { name: 'Calculate' }).click();
 
       await expect(page.getByRole('heading', { name: /Tax Code: BR/ })).toBeVisible();
@@ -596,8 +597,8 @@ test.describe('Phase 8: Comprehensive Playwright E2E Tests', () => {
 
     test('rejects an unrecognised tax code entered via Other', async ({ page }) => {
       await page.getByRole('button', { name: 'Calculators' }).click();
-      await page.getByLabel('Gross Annual Salary (£)').fill('20000');
-      await page.getByLabel('Tax Code').selectOption('other');
+      await page.getByLabel('Gross annual salary').fill('20000');
+      await page.getByLabel('Tax code').selectOption('other');
       await page.getByLabel('Enter tax code').fill('ZZ99');
       await page.getByRole('button', { name: 'Calculate' }).click();
 
@@ -606,8 +607,8 @@ test.describe('Phase 8: Comprehensive Playwright E2E Tests', () => {
 
     test('accepts a K code entered via Other', async ({ page }) => {
       await page.getByRole('button', { name: 'Calculators' }).click();
-      await page.getByLabel('Gross Annual Salary (£)').fill('30000');
-      await page.getByLabel('Tax Code').selectOption('other');
+      await page.getByLabel('Gross annual salary').fill('30000');
+      await page.getByLabel('Tax code').selectOption('other');
       await page.getByLabel('Enter tax code').fill('K475');
       await page.getByRole('button', { name: 'Calculate' }).click();
 
@@ -616,7 +617,7 @@ test.describe('Phase 8: Comprehensive Playwright E2E Tests', () => {
 
     test('switches between yearly, monthly, and weekly views', async ({ page }) => {
       await page.getByRole('button', { name: 'Calculators' }).click();
-      await page.getByLabel('Gross Annual Salary (£)').fill('35000');
+      await page.getByLabel('Gross annual salary').fill('35000');
       await page.getByRole('button', { name: 'Calculate' }).click();
 
       await expect(page.getByText('£28719.60')).toBeVisible(); // yearly net income
@@ -631,8 +632,8 @@ test.describe('Phase 8: Comprehensive Playwright E2E Tests', () => {
 
     test('clears the form and returns to it after a calculation', async ({ page }) => {
       await page.getByRole('button', { name: 'Calculators' }).click();
-      await page.getByLabel('Gross Annual Salary (£)').fill('35000');
-      await page.getByLabel('Tax Code').selectOption('BR');
+      await page.getByLabel('Gross annual salary').fill('35000');
+      await page.getByLabel('Tax code').selectOption('BR');
       await page.getByRole('button', { name: 'Calculate' }).click();
 
       await expect(page.getByRole('heading', { name: /Breakdown/ })).toBeVisible();
@@ -640,8 +641,8 @@ test.describe('Phase 8: Comprehensive Playwright E2E Tests', () => {
       await page.getByRole('button', { name: 'Clear and calculate again' }).click();
 
       await expect(page.getByRole('heading', { name: /Breakdown/ })).toBeHidden();
-      await expect(page.getByLabel('Gross Annual Salary (£)')).toHaveValue('');
-      await expect(page.getByLabel('Tax Code')).toHaveValue('');
+      await expect(page.getByLabel('Gross annual salary')).toHaveValue('');
+      await expect(page.getByLabel('Tax code')).toHaveValue('');
     });
   });
 });
