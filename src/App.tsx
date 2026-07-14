@@ -961,70 +961,70 @@ function Dashboard() {
               <p style={{ color: TOKENS.colors.neutral[600], marginTop: "8px" }}>Manage your account preferences</p>
             </div>
 
-            <div style={{ backgroundColor: "white", border: `1px solid ${TOKENS.colors.neutral[200]}`, borderRadius: "14px", padding: "24px", marginBottom: "24px" }}>
-              <h2 style={{ fontSize: "18px", fontWeight: "700", marginBottom: "16px", fontFamily: "Manrope, sans-serif" }}>
-                Account Information
-              </h2>
-              <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                <div>
-                  <label style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[700] }}>Business Type</label>
-                  <p style={{ color: TOKENS.colors.neutral[900], marginTop: "4px" }}>Sole Trader</p>
-                </div>
-                <div>
-                  <label style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[700] }}>Trading Since</label>
-                  <p style={{ color: TOKENS.colors.neutral[900], marginTop: "4px" }}>October 2025</p>
-                </div>
-                <div>
-                  <label style={{ fontSize: "13px", fontWeight: "600", color: TOKENS.colors.neutral[700] }}>VAT Registered</label>
-                  <p style={{ color: TOKENS.colors.neutral[900], marginTop: "4px" }}>No</p>
-                </div>
-              </div>
-            </div>
-
-            <div style={{ backgroundColor: "white", border: `1px solid ${TOKENS.colors.neutral[200]}`, borderRadius: "14px", padding: "24px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px", flexWrap: "wrap" }}>
-                <h2 style={{ fontSize: "18px", fontWeight: "700", fontFamily: "Manrope, sans-serif" }}>
-                  Preferences
+            <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+              <div style={{ backgroundColor: "white", border: `1px solid ${TOKENS.colors.neutral[200]}`, borderRadius: "16px", padding: "28px" }}>
+                <h2 style={{ fontSize: "18px", fontWeight: "700", marginBottom: "20px", fontFamily: "Manrope, sans-serif" }}>
+                  Account Information
                 </h2>
-                <Badge variant="default">Coming soon</Badge>
-              </div>
-              <p style={{ fontSize: "13px", color: TOKENS.colors.neutral[600], marginBottom: "16px" }}>
-                These preferences are not yet active. There is no email or reporting service connected in this prototype.
-              </p>
-              <div style={{ display: "flex", flexDirection: "column", gap: "16px", opacity: 0.6 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: "16px", borderBottom: `1px solid ${TOKENS.colors.neutral[200]}` }}>
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: "20px" }}>
                   <div>
-                    <div style={{ fontWeight: "600", color: TOKENS.colors.neutral[900] }}>Email notifications</div>
-                    <div style={{ fontSize: "13px", color: TOKENS.colors.neutral[600], marginTop: "4px" }}>Receive tax deadline alerts</div>
+                    <label style={{ fontSize: "12px", fontWeight: "700", color: TOKENS.colors.neutral[500], textTransform: "uppercase", letterSpacing: "0.04em" }}>Business Type</label>
+                    <p style={{ color: TOKENS.colors.neutral[900], marginTop: "6px", fontSize: "15px", fontWeight: "600" }}>Sole Trader</p>
                   </div>
-                  <Switch checked={notificationsEnabled} onChange={setNotificationsEnabled} disabled aria-label="Email notifications (coming soon)" />
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <div>
-                    <div style={{ fontWeight: "600", color: TOKENS.colors.neutral[900] }}>Monthly reports</div>
-                    <div style={{ fontSize: "13px", color: TOKENS.colors.neutral[600], marginTop: "4px" }}>Get automatic summary emails</div>
+                    <label style={{ fontSize: "12px", fontWeight: "700", color: TOKENS.colors.neutral[500], textTransform: "uppercase", letterSpacing: "0.04em" }}>Trading Since</label>
+                    <p style={{ color: TOKENS.colors.neutral[900], marginTop: "6px", fontSize: "15px", fontWeight: "600" }}>October 2025</p>
                   </div>
-                  <Switch checked={monthlyReportsEnabled} onChange={setMonthlyReportsEnabled} disabled aria-label="Monthly reports (coming soon)" />
+                  <div>
+                    <label style={{ fontSize: "12px", fontWeight: "700", color: TOKENS.colors.neutral[500], textTransform: "uppercase", letterSpacing: "0.04em" }}>VAT Registered</label>
+                    <p style={{ color: TOKENS.colors.neutral[900], marginTop: "6px", fontSize: "15px", fontWeight: "600" }}>No</p>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div style={{ backgroundColor: "white", border: `1px solid ${TOKENS.colors.neutral[200]}`, borderRadius: "14px", padding: "24px", marginTop: "24px" }}>
-              <h2 style={{ fontSize: "18px", fontWeight: "700", marginBottom: "16px", fontFamily: "Manrope, sans-serif" }}>
-                Onboarding Tour
-              </h2>
-              <p style={{ color: TOKENS.colors.neutral[600], marginBottom: "16px", fontSize: "14px" }}>
-                Missed the initial setup or want to review how TaxMate handles your data?
-              </p>
-              <Button variant="secondary" onClick={() => {
-                storageService.setAppPreferences({ onboardingVersion: 0 });
-                window.location.reload();
-              }}>
-                Restart onboarding
-              </Button>
-            </div>
+              <div style={{ backgroundColor: "white", border: `1px solid ${TOKENS.colors.neutral[200]}`, borderRadius: "16px", padding: "28px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px", flexWrap: "wrap" }}>
+                  <h2 style={{ fontSize: "18px", fontWeight: "700", fontFamily: "Manrope, sans-serif" }}>
+                    Preferences
+                  </h2>
+                  <Badge variant="default">Coming soon</Badge>
+                </div>
+                <p style={{ fontSize: "13px", color: TOKENS.colors.neutral[600], marginBottom: "20px" }}>
+                  These preferences are not yet active. There is no email or reporting service connected in this prototype.
+                </p>
+                <div style={{ display: "flex", flexDirection: "column", gap: "20px", opacity: 0.6 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: "20px", borderBottom: `1px solid ${TOKENS.colors.neutral[200]}` }}>
+                    <div>
+                      <div style={{ fontWeight: "600", color: TOKENS.colors.neutral[900] }}>Email notifications</div>
+                      <div style={{ fontSize: "13px", color: TOKENS.colors.neutral[600], marginTop: "4px" }}>Receive tax deadline alerts</div>
+                    </div>
+                    <Switch checked={notificationsEnabled} onChange={setNotificationsEnabled} disabled aria-label="Email notifications (coming soon)" />
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div>
+                      <div style={{ fontWeight: "600", color: TOKENS.colors.neutral[900] }}>Monthly reports</div>
+                      <div style={{ fontSize: "13px", color: TOKENS.colors.neutral[600], marginTop: "4px" }}>Get automatic summary emails</div>
+                    </div>
+                    <Switch checked={monthlyReportsEnabled} onChange={setMonthlyReportsEnabled} disabled aria-label="Monthly reports (coming soon)" />
+                  </div>
+                </div>
+              </div>
 
-            <div style={{ marginTop: "24px" }}>
+              <div style={{ backgroundColor: "white", border: `1px solid ${TOKENS.colors.neutral[200]}`, borderRadius: "16px", padding: "28px" }}>
+                <h2 style={{ fontSize: "18px", fontWeight: "700", marginBottom: "16px", fontFamily: "Manrope, sans-serif" }}>
+                  Onboarding Tour
+                </h2>
+                <p style={{ color: TOKENS.colors.neutral[600], marginBottom: "20px", fontSize: "14px" }}>
+                  Missed the initial setup or want to review how TaxMate handles your data?
+                </p>
+                <Button variant="secondary" onClick={() => {
+                  storageService.setAppPreferences({ onboardingVersion: 0 });
+                  window.location.reload();
+                }}>
+                  Restart onboarding
+                </Button>
+              </div>
+
               <DataAndBackup />
             </div>
           </>

@@ -52,10 +52,10 @@ function Dialog({ open, onClose, title, children }: DialogProps) {
 }
 
 const btnBase =
-  'rounded-lg px-4 py-2 text-sm font-semibold outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-1';
-const btnSecondary = `${btnBase} border border-neutral-300 bg-white text-neutral-800 hover:bg-neutral-100`;
-const btnPrimary = `${btnBase} bg-green-600 text-white hover:bg-green-700 disabled:opacity-50`;
-const btnDanger = `${btnBase} bg-red-600 text-white hover:bg-red-700`;
+  'rounded-lg px-5 py-2.5 text-sm font-semibold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-1';
+const btnSecondary = `${btnBase} border border-neutral-300 bg-white text-neutral-800 hover:bg-neutral-50 hover:border-neutral-400`;
+const btnPrimary = `${btnBase} bg-green-600 text-white shadow-sm hover:bg-green-700 disabled:opacity-50`;
+const btnDanger = `${btnBase} bg-red-600 text-white shadow-sm hover:bg-red-700`;
 const btnGhost = `${btnBase} bg-transparent text-neutral-700 hover:bg-neutral-100`;
 
 type ImportMode = 'restore' | 'merge';
@@ -195,24 +195,24 @@ export function DataAndBackup() {
       : null;
 
   return (
-    <div className="rounded-2xl border border-neutral-200 bg-white p-6">
+    <div className="rounded-2xl border border-neutral-200 bg-white p-7">
       <h2 className="mb-2 text-lg font-bold text-neutral-900">Data &amp; backup</h2>
-      <p className="mb-4 text-sm text-neutral-600">
+      <p className="mb-6 text-sm text-neutral-600">
         Your records are stored only in this browser (localStorage). They are not sent to any server
         and may be lost if you clear your browser data or switch device. Export a backup regularly.
       </p>
 
       <div role="status" aria-live="polite">
         {message && (
-          <div className="mb-4 rounded-lg border border-green-300 bg-green-50 px-4 py-2 text-sm text-green-800">
+          <div className="mb-6 rounded-lg border border-green-300 bg-green-50 px-4 py-2 text-sm text-green-800">
             {message}
           </div>
         )}
       </div>
 
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-7">
         <div>
-          <h3 className="mb-2 text-sm font-semibold text-neutral-700">Export</h3>
+          <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-neutral-500">Export</h3>
           <div className="flex flex-wrap gap-3">
             <button type="button" className={btnSecondary} onClick={handleExportJSON}>
               Export JSON backup
@@ -223,8 +223,8 @@ export function DataAndBackup() {
           </div>
         </div>
 
-        <div>
-          <h3 className="mb-2 text-sm font-semibold text-neutral-700">Import</h3>
+        <div className="border-t border-neutral-200 pt-7">
+          <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-neutral-500">Import</h3>
           <input
             ref={fileInputRef}
             type="file"
@@ -240,8 +240,8 @@ export function DataAndBackup() {
           </p>
         </div>
 
-        <div>
-          <h3 className="mb-2 text-sm font-semibold text-neutral-700">Demo data</h3>
+        <div className="border-t border-neutral-200 pt-7">
+          <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-neutral-500">Demo data</h3>
           <div className="flex flex-wrap gap-3">
             <button type="button" className={btnSecondary} onClick={() => flash(demoMsg(loadDemo()))} disabled={hasDemo}>
               Load demo data
@@ -258,9 +258,9 @@ export function DataAndBackup() {
           </p>
         </div>
 
-        <div className="border-t border-neutral-200 pt-4">
-          <h3 className="mb-2 text-sm font-semibold text-neutral-700">Diagnostics</h3>
-          <p className="mb-2 text-xs text-neutral-500">
+        <div className="border-t border-neutral-200 pt-7">
+          <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-neutral-500">Diagnostics</h3>
+          <p className="mb-3 text-xs text-neutral-500">
             A local, technical log of import/export outcomes and storage events — kept only in this
             browser, never included in your backup export, used purely to help debug problems.
           </p>
@@ -268,7 +268,7 @@ export function DataAndBackup() {
             <p className="text-sm text-neutral-500">No diagnostic entries recorded yet.</p>
           ) : (
             <>
-              <p className="mb-2 text-xs text-neutral-500">
+              <p className="mb-3 text-xs text-neutral-500">
                 {diagnosticsEntries.length} entr{diagnosticsEntries.length === 1 ? 'y' : 'ies'} (most recent 100 kept)
               </p>
               <div className="max-h-56 overflow-y-auto rounded-lg border border-neutral-200">
@@ -287,7 +287,7 @@ export function DataAndBackup() {
               </div>
             </>
           )}
-          <div className="mt-3 flex flex-wrap gap-3">
+          <div className="mt-4 flex flex-wrap gap-3">
             <button
               type="button"
               className={btnSecondary}
@@ -307,12 +307,12 @@ export function DataAndBackup() {
           </div>
         </div>
 
-        <div className="border-t border-neutral-200 pt-4">
-          <h3 className="mb-2 text-sm font-semibold text-neutral-700">Danger zone</h3>
+        <div className="rounded-xl border border-red-200 bg-red-50 p-5">
+          <h3 className="mb-3 text-xs font-bold uppercase tracking-wide text-red-700">Danger zone</h3>
           <button type="button" className={btnDanger} onClick={() => setShowClear(true)}>
             Clear all data…
           </button>
-          <p className="mt-2 text-xs text-neutral-500">
+          <p className="mt-3 text-xs text-red-700">
             Removes all records, the selected tax year and recovery state from this browser.
           </p>
         </div>
