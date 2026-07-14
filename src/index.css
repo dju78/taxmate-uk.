@@ -1,10 +1,16 @@
 @import "tailwindcss";
 
-/* Reset and base styles */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+/* Reset and base styles.
+   Wrapped in @layer base so Tailwind utility classes (p-*, m-*, space-y-*,
+   etc.) can override it — an unlayered rule here would always win over
+   @layer utilities regardless of specificity or source order, silently
+   zeroing out every padding/margin utility class in the app. */
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
 }
 
 html,
