@@ -560,12 +560,88 @@ test.describe('Phase 8: Comprehensive Playwright E2E Tests', () => {
       await expect(page.getByRole('heading', { name: 'Breakdown' })).toBeHidden();
     });
 
-    test('always discloses that pension and student loans are not modelled', async ({ page }) => {
+    test('always discloses that student loans and benefits-in-kind are not modelled', async ({ page }) => {
       await page.getByRole('button', { name: 'Calculators' }).click();
       await page.getByLabel('Gross Annual Salary (£)').fill('35000');
       await page.getByRole('button', { name: 'Calculate' }).click();
 
-      await expect(page.getByText(/does not account for pension contributions, student loan repayments/)).toBeVisible();
+      await expect(page.getByText(/does not account for student loan repayments/)).toBeVisible();
+    });
+
+    test('applies a pension contribution percentage before tax and NIC', async ({ page }) => {
+      await page.getByRole('button', { name: 'Calculators' }).click();
+      await page.getByLabel('Gross Annual Salary (£)').fill('35000');
+
+      // Range inputs don't support fill(); use keyboard to jump to the max (10%).
+      const pensionSlider = page.getByLabel(/Pension Contribution/);
+      await pensionSlider.focus();
+      await pensionSlider.press('End');
+
+      await page.getByRole('button', { name: 'Calculate' }).click();
+
+      await expect(page.getByRole('heading', { name: /Breakdown/ })).toBeVisible();
+      await expect(page.getByText('Pension Contribution (10%)')).toBeVisible();
+      await expect(page.getByText(/salary sacrifice pension contribution of 10%/)).toBeVisible();
+    });
+
+    test('applies an explicit tax code and overrides the standard Personal Allowance', async ({ page }) => {
+      await page.getByRole('button', { name: 'Calculators' }).click();
+      await page.getByLabel('Gross Annual Salary (£)').fill('20000');
+      await page.getByLabel('Tax Code').selectOption('BR');
+      await page.getByRole('button', { name: 'Calculate' }).click();
+
+      await expect(page.getByRole('heading', { name: /Tax Code: BR/ })).toBeVisible();
+      await expect(page.getByText(/Tax calculated using tax code BR/)).toBeVisible();
+    });
+
+    test('rejects an unrecognised tax code entered via Other', async ({ page }) => {
+      await page.getByRole('button', { name: 'Calculators' }).click();
+      await page.getByLabel('Gross Annual Salary (£)').fill('20000');
+      await page.getByLabel('Tax Code').selectOption('other');
+      await page.getByLabel('Enter tax code').fill('ZZ99');
+      await page.getByRole('button', { name: 'Calculate' }).click();
+
+      await expect(page.getByText(/not a recognised tax code/)).toBeVisible();
+    });
+
+    test('accepts a K code entered via Other', async ({ page }) => {
+      await page.getByRole('button', { name: 'Calculators' }).click();
+      await page.getByLabel('Gross Annual Salary (£)').fill('30000');
+      await page.getByLabel('Tax Code').selectOption('other');
+      await page.getByLabel('Enter tax code').fill('K475');
+      await page.getByRole('button', { name: 'Calculate' }).click();
+
+      await expect(page.getByRole('heading', { name: /Tax Code: K475/ })).toBeVisible();
+    });
+
+    test('switches between yearly, monthly, and weekly views', async ({ page }) => {
+      await page.getByRole('button', { name: 'Calculators' }).click();
+      await page.getByLabel('Gross Annual Salary (£)').fill('35000');
+      await page.getByRole('button', { name: 'Calculate' }).click();
+
+      await expect(page.getByText('£28719.60')).toBeVisible(); // yearly net income
+
+      await page.getByRole('button', { name: 'Monthly' }).click();
+      await expect(page.getByText('£2393.30')).toBeVisible();
+      await expect(page.getByText(/£28719.60\/year/)).toBeVisible();
+
+      await page.getByRole('button', { name: 'Weekly' }).click();
+      await expect(page.getByText('£552.30')).toBeVisible();
+    });
+
+    test('clears the form and returns to it after a calculation', async ({ page }) => {
+      await page.getByRole('button', { name: 'Calculators' }).click();
+      await page.getByLabel('Gross Annual Salary (£)').fill('35000');
+      await page.getByLabel('Tax Code').selectOption('BR');
+      await page.getByRole('button', { name: 'Calculate' }).click();
+
+      await expect(page.getByRole('heading', { name: /Breakdown/ })).toBeVisible();
+
+      await page.getByRole('button', { name: 'Clear and calculate again' }).click();
+
+      await expect(page.getByRole('heading', { name: /Breakdown/ })).toBeHidden();
+      await expect(page.getByLabel('Gross Annual Salary (£)')).toHaveValue('');
+      await expect(page.getByLabel('Tax Code')).toHaveValue('');
     });
   });
 });
